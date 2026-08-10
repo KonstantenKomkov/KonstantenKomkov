@@ -65,7 +65,7 @@ class CollectActivity:
             repositories,
             key=lambda item: (item.full_name.casefold(), item.repository_id),
         ):
-            if repository.full_name.casefold() in excluded:
+            if repository.empty or repository.full_name.casefold() in excluded:
                 continue
             for commit in self._activity_source.iter_commits(repository, since, until):
                 identity = (commit.author_email, commit.authored_at)

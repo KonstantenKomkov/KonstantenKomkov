@@ -91,6 +91,7 @@ def test_collect_activity_matches_manual_public_private_aggregate() -> None:
         RepositoryReference(2, "fixture-org/private-fixture", private=True),
         RepositoryReference(3, "octocat/fork-fixture", private=False),
         RepositoryReference(4, "octocat/excluded-fixture", private=True),
+        RepositoryReference(5, "octocat/empty-fixture", private=True, empty=True),
     )
     owner_today = metadata(SHA_A, datetime(2026, 8, 9, 22, 30, tzinfo=timezone.utc))
     other_author = metadata(
@@ -112,6 +113,7 @@ def test_collect_activity_matches_manual_public_private_aggregate() -> None:
             2: (owner_today, owner_two_days_ago),
             3: (owner_today, owner_two_days_ago),
             4: (metadata("1" * 40, now),),
+            5: (metadata("2" * 40, now),),
         },
         changes={
             SHA_A: (
@@ -137,6 +139,7 @@ def test_collect_activity_matches_manual_public_private_aggregate() -> None:
                 "fixture-org/private-fixture",
                 "octocat/fork-fixture",
                 "octocat/excluded-fixture",
+                "octocat/empty-fixture",
             }
         ),
     )

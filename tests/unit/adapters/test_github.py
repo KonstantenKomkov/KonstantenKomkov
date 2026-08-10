@@ -97,7 +97,7 @@ def test_list_repositories_checks_identity_and_fetches_every_page() -> None:
             per_page="2",
             sort="full_name",
             visibility="all",
-        ): response([repository_item(3, "fixture-org/collaborator-fixture", True)]),
+        ): response([repository_item(3, "fixture-org/collaborator-fixture", True, pushed_at=None)]),
     }
     http_client = StubHttpClient(routes)
     source = GitHubRestActivitySource(
@@ -117,7 +117,8 @@ def test_list_repositories_checks_identity_and_fetches_every_page() -> None:
     ]
     assert cached_repositories == repositories
     assert len(http_client.requests) == 3
-    assert all(item.default_branch == "main" and not item.empty for item in repositories)
+    assert all(item.default_branch == "main" for item in repositories)
+    assert [item.empty for item in repositories] == [False, False, True]
     assert all("fixture-credential" not in request_url for request_url, _ in http_client.requests)
     assert all(
         headers["Authorization"] == "Bearer fixture-credential"
