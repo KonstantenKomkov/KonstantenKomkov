@@ -202,7 +202,8 @@ class LocalGitSource:
             except AssertionError:
                 raise
             except Exception as error:
-                raise AssertionError("SAFE_PHASE:git-log") from error
+                kind = safe_exception_kind(error)
+                raise AssertionError(f"SAFE_PHASE:git-log-{kind}") from error
             for line in log.splitlines():
                 try:
                     sha, authored_at, author_email = line.split("\t", maxsplit=2)
@@ -232,7 +233,8 @@ class LocalGitSource:
         except AssertionError:
             raise
         except Exception as error:
-            raise AssertionError("SAFE_PHASE:git-show") from error
+            kind = safe_exception_kind(error)
+            raise AssertionError(f"SAFE_PHASE:git-show-{kind}") from error
         changes: list[FileChange] = []
         for line in numstat.splitlines():
             try:
