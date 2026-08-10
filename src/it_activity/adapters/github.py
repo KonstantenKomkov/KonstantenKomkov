@@ -199,11 +199,9 @@ class GitHubRestActivitySource:
         changes: list[FileChange] = []
         seen_paths: set[str] = set()
         seen_pages: set[bytes] = set()
-        expected_additions: int | None = None
-        expected_deletions: int | None = None
 
         for page in range(1, MAX_PAGES + 1):
-            value, page_digest = self._get_json_page(path, {}, page)
+            value, page_digest, response_headers = self._get_json_page(path, {}, page)
             if page_digest in seen_pages:
                 raise GitHubApiError("GitHub повторил страницу файлов коммита.")
             seen_pages.add(page_digest)
@@ -211,11 +209,6 @@ class GitHubRestActivitySource:
             response_sha = self._required_string(commit, "sha").casefold()
             if response_sha != commit_sha.casefold():
                 raise GitHubApiError("GitHub вернул данные другого коммита.")
-
-            if page == 1:
-                stats = self._as_object(commit.get("stats"))
-                expected_additions = self._required_integer(stats, "additions")
-                expected_deletions = self._required_integer(stats, "deletions")
 
             file_values = self._as_array(commit.get("files"))
             if len(file_values) > self._page_size:
@@ -242,18 +235,11 @@ class GitHubRestActivitySource:
 
             if len(changes) >= MAX_COMMIT_FILES:
                 raise GitHubApiError("Diff коммита достиг лимита GitHub и может быть неполным.")
-            if len(file_values) < self._page_size:
+            if not self._has_next_page(response_headers):
                 break
         else:
             raise GitHubApiError("GitHub превысил допустимое число страниц файлов.")
 
-        if expected_additions is None or expected_deletions is None:
-            raise GitHubApiError("GitHub не вернул статистику коммита.")
-        if (
-            sum(change.additions for change in changes) != expected_additions
-            or sum(change.deletions for change in changes) != expected_deletions
-        ):
-            raise GitHubApiError("Файловая статистика GitHub оказалась неполной.")
         return tuple(changes)
 
     def _get_paginated_array(
@@ -264,7 +250,7 @@ class GitHubRestActivitySource:
         values: list[object] = []
         seen_pages: set[bytes] = set()
         for page in range(1, MAX_PAGES + 1):
-            value, page_digest = self._get_json_page(path, parameters, page)
+            value, page_digest, _ = self._get_json_page(path, parameters, page)
             if page_digest in seen_pages:
                 raise GitHubApiError("GitHub повторил страницу пагинации.")
             seen_pages.add(page_digest)
@@ -277,7 +263,7 @@ class GitHubRestActivitySource:
         raise GitHubApiError("GitHub превысил допустимое число страниц.")
 
     def _get_json(self, path: str) -> object:
-        value, _ = self._get_json_page(path, {}, None)
+        value, _, _ = self._get_json_page(path, {}, None)
         return value
 
     def _get_tree(
@@ -288,7 +274,7 @@ class GitHubRestActivitySource:
     ) -> dict[str, object]:
         encoded_ref = quote(tree_ref, safe="")
         parameters = {"recursive": "1"} if recursive else {}
-        value, _ = self._get_json_page(
+        value, _, _ = self._get_json_page(
             f"/repos/{repository_path}/git/trees/{encoded_ref}",
             parameters,
             None,
@@ -320,7 +306,7 @@ class GitHubRestActivitySource:
         path: str,
         parameters: Mapping[str, str],
         page: int | None,
-    ) -> tuple[object, bytes]:
+    ) -> tuple[object, bytes, Mapping[str, str]]:
         query = dict(parameters)
         if page is not None:
             query.update({"page": str(page), "per_page": str(self._page_size)})
@@ -335,7 +321,54 @@ class GitHubRestActivitySource:
             value: object = json.loads(response.body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
             raise GitHubApiError("GitHub API вернул некорректный JSON.") from None
-        return value, hashlib.sha256(response.body).digest()
+        return value, hashlib.sha256(response.body).digest(), response.headers
+
+    def _has_next_page(self, headers: Mapping[str, str]) -> bool:
+        """Use GitHub's documented Link header as the file-completeness signal."""
+        link_values = [value for name, value in headers.items() if name.casefold() == "link"]
+        if not link_values:
+            return False
+        if len(link_values) != 1:
+            raise GitHubApiError("GitHub вернул некорректную пагинацию.")
+
+        next_links = 0
+        for raw_entry in link_values[0].split(","):
+            entry = raw_entry.strip()
+            target_end = entry.find(">")
+            if not entry.startswith("<") or target_end <= 1:
+                raise GitHubApiError("GitHub вернул некорректную пагинацию.")
+            target = entry[1:target_end]
+            parsed_target = urlsplit(target)
+            if (
+                (parsed_target.scheme, parsed_target.netloc) != self._api_origin
+                or parsed_target.username is not None
+                or parsed_target.password is not None
+                or parsed_target.fragment
+            ):
+                raise GitHubApiError("GitHub вернул некорректную пагинацию.")
+
+            relations: set[str] = set()
+            for raw_parameter in entry[target_end + 1 :].split(";"):
+                parameter = raw_parameter.strip()
+                if not parameter:
+                    continue
+                name, separator, raw_value = parameter.partition("=")
+                if name.strip().casefold() != "rel":
+                    continue
+                if not separator:
+                    raise GitHubApiError("GitHub вернул некорректную пагинацию.")
+                value = raw_value.strip()
+                if len(value) >= 2 and value.startswith('"') and value.endswith('"'):
+                    value = value[1:-1]
+                elif '"' in value:
+                    raise GitHubApiError("GitHub вернул некорректную пагинацию.")
+                relations.update(relation.casefold() for relation in value.split())
+            if "next" in relations:
+                next_links += 1
+
+        if next_links > 1:
+            raise GitHubApiError("GitHub вернул некорректную пагинацию.")
+        return next_links == 1
 
     def _build_url(self, path: str, parameters: Mapping[str, str]) -> str:
         if not path.startswith("/") or any(character in path for character in "\r\n\0"):

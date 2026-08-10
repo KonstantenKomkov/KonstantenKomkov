@@ -17,10 +17,14 @@ SHA_B = "b" * 40
 SHA_C = "c" * 40
 
 
-def response(value: object, status: int = 200) -> HttpResponse:
+def response(
+    value: object,
+    status: int = 200,
+    headers: Mapping[str, str] | None = None,
+) -> HttpResponse:
     return HttpResponse(
         status=status,
-        headers={"content-type": "application/json"},
+        headers={"content-type": "application/json", **(headers or {})},
         body=json.dumps(value).encode(),
     )
 
@@ -206,7 +210,7 @@ def test_iter_commits_fetches_every_branch_and_page_without_messages() -> None:
     assert "owner@example.invalid" not in repr(commits)
 
 
-def test_get_file_changes_fetches_all_pages_and_verifies_totals() -> None:
+def test_get_file_changes_follows_link_header_and_accepts_file_counts() -> None:
     repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
     commit_path = f"/repos/fixture-org/private-fixture/commits/{SHA_A}"
     stats = {"additions": 15, "deletions": 3}
@@ -224,7 +228,13 @@ def test_get_file_changes_fetches_all_pages_and_verifies_totals() -> None:
                     },
                     {"filename": "README.md", "additions": 5, "deletions": 1, "patch": "diff"},
                 ],
-            }
+            },
+            headers={
+                "Link": (
+                    f'<{url(commit_path, page="2", per_page="2")}>; rel="next", '
+                    f'<{url(commit_path, page="2", per_page="2")}>; rel="last"'
+                )
+            },
         ),
         url(commit_path, page="2", per_page="2"): response(
             {
@@ -332,7 +342,7 @@ def test_repository_pagination_failure_blocks_partial_result() -> None:
     assert "private-two" not in str(captured.value)
 
 
-def test_file_total_mismatch_blocks_incomplete_diff() -> None:
+def test_file_totals_do_not_override_complete_github_pagination() -> None:
     repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
     commit_path = f"/repos/fixture-org/private-fixture/commits/{SHA_A}"
     source = GitHubRestActivitySource(
@@ -359,10 +369,122 @@ def test_file_total_mismatch_blocks_incomplete_diff() -> None:
         page_size=2,
     )
 
-    with pytest.raises(GitHubApiError, match="неполной") as captured:
+    changes = source.get_file_changes(repository, SHA_A)
+
+    assert [(change.additions, change.deletions) for change in changes] == [(1, 1)]
+    assert "private_name.py" not in repr(changes)
+
+
+def test_full_file_page_without_next_link_is_complete() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    commit_path = f"/repos/fixture-org/private-fixture/commits/{SHA_A}"
+    first_page_url = url(commit_path, page="1", per_page="2")
+    http_client = StubHttpClient(
+        {
+            first_page_url: response(
+                {
+                    "sha": SHA_A,
+                    "files": [
+                        {
+                            "filename": "src/private_one.py",
+                            "additions": 1,
+                            "deletions": 0,
+                            "patch": "diff",
+                        },
+                        {
+                            "filename": "src/private_two.py",
+                            "additions": 0,
+                            "deletions": 1,
+                            "patch": "diff",
+                        },
+                    ],
+                }
+            )
+        }
+    )
+    source = GitHubRestActivitySource(
+        http_client,
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    changes = source.get_file_changes(repository, SHA_A)
+
+    assert [(change.additions, change.deletions) for change in changes] == [(1, 0), (0, 1)]
+    assert [request_url for request_url, _ in http_client.requests] == [first_page_url]
+    assert "private_one.py" not in repr(changes)
+    assert "private_two.py" not in repr(changes)
+
+
+def test_file_next_link_failure_blocks_partial_diff() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    commit_path = f"/repos/fixture-org/private-fixture/commits/{SHA_A}"
+    second_page_url = url(commit_path, page="2", per_page="2")
+    source = GitHubRestActivitySource(
+        StubHttpClient(
+            {
+                url(commit_path, page="1", per_page="2"): response(
+                    {
+                        "sha": SHA_A,
+                        "files": [
+                            {
+                                "filename": "src/private_name.py",
+                                "additions": 1,
+                                "deletions": 1,
+                                "patch": "diff",
+                            }
+                        ],
+                    },
+                    headers={"link": f'<{second_page_url}>; rel="next"'},
+                ),
+                second_page_url: response({"message": "private failure"}, status=503),
+            }
+        ),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    with pytest.raises(GitHubApiError, match="HTTP 503") as captured:
         source.get_file_changes(repository, SHA_A)
 
     assert "private_name.py" not in str(captured.value)
+
+
+def test_file_pagination_rejects_cross_origin_link_without_leaking_it() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    commit_path = f"/repos/fixture-org/private-fixture/commits/{SHA_A}"
+    source = GitHubRestActivitySource(
+        StubHttpClient(
+            {
+                url(commit_path, page="1", per_page="2"): response(
+                    {
+                        "sha": SHA_A,
+                        "files": [
+                            {
+                                "filename": "src/private_name.py",
+                                "additions": 1,
+                                "deletions": 1,
+                                "patch": "diff",
+                            }
+                        ],
+                    },
+                    headers={"link": '<https://private.example.invalid/page/2>; rel="next"'},
+                )
+            }
+        ),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    with pytest.raises(GitHubApiError, match="некорректную пагинацию") as captured:
+        source.get_file_changes(repository, SHA_A)
+
+    message = str(captured.value)
+    assert "private.example.invalid" not in message
+    assert "private_name.py" not in message
 
 
 def test_get_language_bytes_returns_linguist_counts_without_repository_details() -> None:

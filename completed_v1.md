@@ -47,7 +47,8 @@
 
 - используется GitHub REST API версии `2026-03-10`;
 - diff из 3000 файлов отклоняется как потенциально усечённый ограничением GitHub;
-- отсутствие любой страницы, противоречивые метаданные или несовпадение общей и файловой статистики блокируют результат;
+- отсутствие указанной GitHub через `Link rel="next"` страницы, повтор страницы,
+  противоречивые метаданные или некорректная пагинация блокируют результат;
 - тесты не требуют реального GitHub-токена и используют только вымышленные public/private fixtures.
 
 Артефакты: `src/it_activity/domain/activity.py`, `src/it_activity/domain/source_files.py`, `src/it_activity/application/collect_activity.py`, `src/it_activity/adapters/github.py`, `src/it_activity/adapters/http.py`, `src/it_activity/entrypoints/cli.py`, `tests/unit/`, `docs/activity-semantics.md`.
@@ -144,7 +145,7 @@
 
 - unit-тесты контролируют календарные границы, timezone, авторов, глобальную SHA-дедупликацию, file exclusions, line counts, языки, технологии и рендеринг;
 - end-to-end integration-тест создаёт временный локальный Git-репозиторий с несколькими ветками, повторным SHA и приватными metadata, затем проверяет агрегаты и полный публичный вывод;
-- CI запускает Ruff formatter/linter, строгий mypy, 93 теста и `pip check` на Python 3.10 и 3.14;
+- CI запускает Ruff formatter/linter, строгий mypy, 96 тестов и `pip check` на Python 3.10 и 3.14;
 - изолированный `pip-audit` проверяет закреплённые dev/build и собственные audit dependencies и блокирует любой известный advisory, что строже порога high/critical;
 - Gitleaks с полной историей блокирует секреты без comments, summary или artifacts, а CodeQL выполняет расширенный Python-анализ;
 - статические тесты требуют полный commit SHA у каждого внешнего Action и fail-closed конфигурацию security jobs.
