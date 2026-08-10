@@ -24,6 +24,7 @@ from it_activity.ports.activity_source import ActivitySourceError
 
 PRIVATE_REPOSITORY_NAME = "fixture-org/private-project"
 PRIVATE_REPOSITORY_URL = "git@github.com:fixture-org/private-project.git"
+PRIVATE_NON_GITHUB_URL = "git@gitlab.example.invalid:private-namespace/nested/private-project.git"
 PRIVATE_PATH = "src/private/customer_name.py"
 PRIVATE_EMAIL = "private-owner@example.invalid"
 PRIVATE_MESSAGE = "private fixture customer migration"
@@ -312,10 +313,39 @@ def test_local_git_activity_rejects_unsafe_origin_without_exposing_private_value
         LocalGitActivitySource((repository,))
 
     message = str(captured.value)
-    assert "безопасного GitHub origin" in message
+    assert "безопасного Git origin" in message
     assert str(repository) not in message
     assert private_remote not in message
     assert "private-password" not in message
+
+
+def test_local_git_activity_uses_an_opaque_identity_for_another_safe_git_host(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "private-non-github-repository"
+    repository.mkdir()
+    run_git(repository, "init", "--quiet", "--initial-branch=main")
+    run_git(repository, "remote", "add", "origin", PRIVATE_NON_GITHUB_URL)
+    write_fixture(repository, PRIVATE_PATH, f"{PRIVATE_SOURCE}\n")
+    authored_at = datetime(2026, 8, 8, 10, 0, tzinfo=timezone.utc)
+    commit_fixture(repository, PRIVATE_MESSAGE, PRIVATE_EMAIL, authored_at)
+    source = LocalGitActivitySource((repository,))
+
+    reference = source.list_repositories("octocat")[0]
+    commits = tuple(
+        source.iter_commits(
+            reference,
+            datetime(2026, 8, 1, tzinfo=timezone.utc),
+            datetime(2026, 8, 11, tzinfo=timezone.utc),
+        )
+    )
+
+    assert reference.full_name.startswith("local/")
+    assert "gitlab" not in reference.full_name
+    assert "private" not in reference.full_name
+    assert [(commit.authored_at, commit.author_email) for commit in commits] == [
+        (authored_at, PRIVATE_EMAIL)
+    ]
 
 
 def test_local_git_activity_rejects_missing_path_without_exposing_it(tmp_path: Path) -> None:

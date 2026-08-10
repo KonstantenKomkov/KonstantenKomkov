@@ -23,10 +23,12 @@ from it_activity.ports.activity_source import ActivitySourceError
 LOCAL_REPOSITORIES_VARIABLE = "IT_ACTIVITY_LOCAL_REPOSITORIES"
 
 _SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40,64}$")
-_SCP_GITHUB_REMOTE_PATTERN = re.compile(
-    r"^git@github\.com:(?P<owner>[^/]+)/(?P<repository>[^/]+)$",
+_SCP_REMOTE_PATTERN = re.compile(
+    r"^git@(?P<host>[A-Za-z0-9.-]+):(?P<path>[^?#]+)$",
     re.IGNORECASE,
 )
+_REMOTE_HOST_PATTERN = re.compile(r"^(?![.-])(?=.{1,253}$)[A-Za-z0-9.-]+(?<![.-])$")
+_REMOTE_PATH_COMPONENT_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,100}$")
 _GIT_COMMAND_TIMEOUT_SECONDS = 120
 
 
@@ -85,7 +87,7 @@ class LocalGitActivitySource:
 
     @property
     def repository_names(self) -> frozenset[str]:
-        """Return private names only for in-process completeness validation."""
+        """Return internal identities only for in-process completeness validation."""
         return frozenset(repository.reference.full_name for repository in self._repositories)
 
     def list_repositories(self, owner_login: str) -> Sequence[RepositoryReference]:
@@ -248,9 +250,9 @@ class LocalGitActivitySource:
 
             remote = self._decode_single_line(
                 self._run_git(resolved_path, "remote", "get-url", "origin"),
-                "У локального репозитория нет безопасного GitHub origin.",
+                "У локального репозитория нет безопасного Git origin.",
             )
-            full_name = self._github_repository_name(remote)
+            full_name = self._repository_name(remote)
             normalized_name = full_name.casefold()
             repository_id = self._repository_id(normalized_name)
             if normalized_name in names or repository_id in identifiers:
@@ -354,18 +356,22 @@ class LocalGitActivitySource:
         return decoded
 
     @staticmethod
-    def _github_repository_name(remote: str) -> str:
-        normalized_remote = remote[:-4] if remote.casefold().endswith(".git") else remote
-        scp_match = _SCP_GITHUB_REMOTE_PATTERN.fullmatch(normalized_remote)
+    def _repository_name(remote: str) -> str:
+        """Return a GitHub name or an opaque identity for another safe Git host."""
+        if remote != remote.strip() or any(character in remote for character in "\r\n\0"):
+            raise ActivitySourceError("У локального репозитория нет безопасного Git origin.")
+
+        scp_match = _SCP_REMOTE_PATTERN.fullmatch(remote)
         if scp_match is not None:
-            full_name = f"{scp_match.group('owner')}/{scp_match.group('repository')}"
+            host = scp_match.group("host").casefold()
+            raw_path = scp_match.group("path")
         else:
             try:
-                parsed = urlsplit(normalized_remote)
+                parsed = urlsplit(remote)
                 port = parsed.port
             except ValueError:
                 raise ActivitySourceError(
-                    "У локального репозитория нет безопасного GitHub origin."
+                    "У локального репозитория нет безопасного Git origin."
                 ) from None
             scheme = parsed.scheme.casefold()
             allowed_scheme = scheme in {"https", "ssh"}
@@ -380,25 +386,47 @@ class LocalGitActivitySource:
                 and not parsed.path.endswith("/")
                 and "//" not in parsed.path
             )
-            components = parsed.path.removeprefix("/").split("/")
             if (
                 not allowed_scheme
                 or parsed.hostname is None
-                or parsed.hostname.casefold() != "github.com"
                 or parsed.password is not None
                 or not allowed_user
                 or not allowed_port
                 or parsed.query
                 or parsed.fragment
                 or not canonical_path
-                or len(components) != 2
             ):
-                raise ActivitySourceError("У локального репозитория нет безопасного GitHub origin.")
-            full_name = "/".join(components)
+                raise ActivitySourceError("У локального репозитория нет безопасного Git origin.")
+            host = parsed.hostname.casefold()
+            raw_path = parsed.path.removeprefix("/")
 
-        if not valid_repository_full_name(full_name):
-            raise ActivitySourceError("У локального репозитория нет безопасного GitHub origin.")
-        return full_name
+        if (
+            _REMOTE_HOST_PATTERN.fullmatch(host) is None
+            or ".." in host
+            or raw_path.startswith("/")
+            or raw_path.endswith("/")
+            or "//" in raw_path
+        ):
+            raise ActivitySourceError("У локального репозитория нет безопасного Git origin.")
+
+        components = raw_path.split("/")
+        if components and components[-1].casefold().endswith(".git"):
+            components[-1] = components[-1][:-4]
+        if len(components) < 2 or any(
+            component in {".", ".."} or _REMOTE_PATH_COMPONENT_PATTERN.fullmatch(component) is None
+            for component in components
+        ):
+            raise ActivitySourceError("У локального репозитория нет безопасного Git origin.")
+
+        if host == "github.com":
+            full_name = "/".join(components)
+            if len(components) != 2 or not valid_repository_full_name(full_name):
+                raise ActivitySourceError("У локального репозитория нет безопасного Git origin.")
+            return full_name
+
+        canonical_remote = f"{host}/{'/'.join(components)}"
+        opaque_name = blake2b(canonical_remote.encode("utf-8"), digest_size=16).hexdigest()
+        return f"local/{opaque_name}"
 
     @staticmethod
     def _repository_id(normalized_name: str) -> int:
