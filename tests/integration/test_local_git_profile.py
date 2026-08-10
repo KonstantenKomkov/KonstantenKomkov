@@ -208,13 +208,20 @@ class LocalGitSource:
             for line in log.splitlines():
                 try:
                     sha, authored_at, author_email = line.split("\t", maxsplit=2)
+                except Exception as error:
+                    raise AssertionError("SAFE_PHASE:log-fields") from error
+                try:
+                    parsed_authored_at = datetime.fromisoformat(authored_at)
+                except Exception as error:
+                    raise AssertionError("SAFE_PHASE:log-timestamp") from error
+                try:
                     yield CommitMetadata(
                         sha=sha,
-                        authored_at=datetime.fromisoformat(authored_at),
+                        authored_at=parsed_authored_at,
                         author_email=author_email,
                     )
                 except Exception as error:
-                    raise AssertionError("SAFE_PHASE:commit-metadata") from error
+                    raise AssertionError("SAFE_PHASE:commit-value") from error
 
     def get_file_changes(
         self,
