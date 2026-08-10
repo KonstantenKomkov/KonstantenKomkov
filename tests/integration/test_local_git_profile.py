@@ -278,14 +278,20 @@ def local_profile_fixture(tmp_path: Path) -> LocalProfileFixture:
     repository = tmp_path / "private-worktree"
     output = tmp_path / "public-output"
     output.mkdir()
-    create_private_repository(repository)
+    try:
+        create_private_repository(repository)
+    except Exception as error:
+        raise AssertionError("SAFE_PHASE:repository-fixture") from error
 
-    configuration = ProfileConfiguration(
-        github_login="octocat",
-        author_emails=frozenset({PRIVATE_EMAIL}),
-        expected_repositories=frozenset({PRIVATE_REPOSITORY_NAME}),
-        timezone="Europe/Moscow",
-    )
+    try:
+        configuration = ProfileConfiguration(
+            github_login="octocat",
+            author_emails=frozenset({PRIVATE_EMAIL}),
+            expected_repositories=frozenset({PRIVATE_REPOSITORY_NAME}),
+            timezone="Europe/Moscow",
+        )
+    except Exception as error:
+        raise AssertionError("SAFE_PHASE:configuration") from error
     configuration_provider = StaticConfigurationProvider(configuration)
     source = LocalGitSource(repository)
     activity_provider = CollectActivity(
@@ -299,7 +305,10 @@ def local_profile_fixture(tmp_path: Path) -> LocalProfileFixture:
 
 
 def test_local_git_activity_aggregation(local_profile_fixture: LocalProfileFixture) -> None:
-    activity = local_profile_fixture.activity_provider.execute()
+    try:
+        activity = local_profile_fixture.activity_provider.execute()
+    except Exception as error:
+        raise AssertionError("SAFE_PHASE:activity-execute") from error
 
     assert activity.totals(365).commits == 2, "SAFE_PHASE:commit-count"
     assert activity.totals(365).added_lines == 5, "SAFE_PHASE:added-lines"
