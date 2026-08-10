@@ -7,7 +7,10 @@
 
 - `IT_ACTIVITY_GITHUB_LOGIN` — публичный GitHub login владельца профиля;
 - `IT_ACTIVITY_AUTHOR_EMAILS` — разделённые запятыми email, по которым определяется
-  авторство коммитов.
+  авторство коммитов;
+- `IT_ACTIVITY_GITHUB_READ_TOKEN` — fine-grained PAT с доступом на чтение metadata
+  и contents всех учитываемых публичных и приватных репозиториев. Переменная нужна
+  только командам сбора и генерации.
 
 Необязательные переменные:
 
@@ -22,3 +25,6 @@ IT_ACTIVITY_GITHUB_LOGIN=octocat \
 IT_ACTIVITY_AUTHOR_EMAILS=owner@example.invalid \
 .venv/bin/it-activity validate-config
 ```
+
+Токен передаётся процессу через окружение. Его нельзя добавлять в URL, аргументы
+команд, файлы конфигурации или вывод CI.

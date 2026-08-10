@@ -1,0 +1,349 @@
+"""Contract tests for paginated private-safe GitHub REST collection."""
+
+import json
+from collections.abc import Mapping
+from datetime import datetime, timezone
+from urllib.parse import urlencode
+
+import pytest
+
+from it_activity.adapters.github import GITHUB_API_VERSION, GitHubApiError, GitHubRestActivitySource
+from it_activity.domain.activity import RepositoryReference
+from it_activity.ports.http import HttpResponse
+
+API_URL = "https://api.github.test"
+SHA_A = "a" * 40
+SHA_B = "b" * 40
+SHA_C = "c" * 40
+
+
+def response(value: object, status: int = 200) -> HttpResponse:
+    return HttpResponse(
+        status=status,
+        headers={"content-type": "application/json"},
+        body=json.dumps(value).encode(),
+    )
+
+
+def url(path: str, **parameters: str) -> str:
+    base = f"{API_URL}{path}"
+    return base if not parameters else f"{base}?{urlencode(sorted(parameters.items()))}"
+
+
+class StubHttpClient:
+    """Return exact fixture responses and record credential handling."""
+
+    def __init__(self, responses: Mapping[str, HttpResponse]) -> None:
+        self._responses = responses
+        self.requests: list[tuple[str, Mapping[str, str]]] = []
+
+    def get(self, request_url: str, headers: Mapping[str, str]) -> HttpResponse:
+        self.requests.append((request_url, dict(headers)))
+        return self._responses[request_url]
+
+
+def repository_item(identifier: int, full_name: str, private: bool) -> dict[str, object]:
+    return {"id": identifier, "full_name": full_name, "private": private}
+
+
+def commit_item(sha: str, email: str, date: str, message: str) -> dict[str, object]:
+    return {
+        "sha": sha,
+        "commit": {
+            "author": {"email": email, "date": date},
+            "message": message,
+        },
+    }
+
+
+def test_list_repositories_checks_identity_and_fetches_every_page() -> None:
+    routes = {
+        url("/user"): response({"login": "octocat"}),
+        url(
+            "/user/repos",
+            affiliation="owner,collaborator,organization_member",
+            direction="asc",
+            page="1",
+            per_page="2",
+            sort="full_name",
+            visibility="all",
+        ): response(
+            [
+                repository_item(1, "octocat/public-fixture", False),
+                repository_item(2, "fixture-org/private-fixture", True),
+            ]
+        ),
+        url(
+            "/user/repos",
+            affiliation="owner,collaborator,organization_member",
+            direction="asc",
+            page="2",
+            per_page="2",
+            sort="full_name",
+            visibility="all",
+        ): response([repository_item(3, "fixture-org/collaborator-fixture", True)]),
+    }
+    http_client = StubHttpClient(routes)
+    source = GitHubRestActivitySource(
+        http_client,
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    repositories = source.list_repositories("OCTOCAT")
+
+    assert [(item.repository_id, item.private) for item in repositories] == [
+        (1, False),
+        (2, True),
+        (3, True),
+    ]
+    assert all("fixture-credential" not in request_url for request_url, _ in http_client.requests)
+    assert all(
+        headers["Authorization"] == "Bearer fixture-credential"
+        for _, headers in http_client.requests
+    )
+    assert all(
+        headers["X-GitHub-Api-Version"] == GITHUB_API_VERSION for _, headers in http_client.requests
+    )
+    assert "private-fixture" not in repr(repositories[1])
+
+
+def test_iter_commits_fetches_every_branch_and_page_without_messages() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    since = datetime(2026, 8, 1, tzinfo=timezone.utc)
+    until = datetime(2026, 8, 10, tzinfo=timezone.utc)
+    common = {
+        "since": "2026-08-01T00:00:00Z",
+        "until": "2026-08-10T00:00:00Z",
+        "per_page": "2",
+    }
+    routes = {
+        url("/repos/fixture-org/private-fixture/branches", page="1", per_page="2"): response(
+            [{"name": "main"}, {"name": "feature/private-fixture"}]
+        ),
+        url("/repos/fixture-org/private-fixture/branches", page="2", per_page="2"): response([]),
+        url(
+            "/repos/fixture-org/private-fixture/commits",
+            page="1",
+            sha="main",
+            **common,
+        ): response(
+            [
+                commit_item(
+                    SHA_A,
+                    "owner@example.invalid",
+                    "2026-08-09T10:00:00Z",
+                    "private fixture message A",
+                ),
+                commit_item(
+                    SHA_B,
+                    "other@example.invalid",
+                    "2026-08-08T10:00:00+00:00",
+                    "private fixture message B",
+                ),
+            ]
+        ),
+        url(
+            "/repos/fixture-org/private-fixture/commits",
+            page="2",
+            sha="main",
+            **common,
+        ): response(
+            [
+                commit_item(
+                    SHA_C,
+                    "owner@example.invalid",
+                    "2026-08-07T10:00:00Z",
+                    "private fixture message C",
+                )
+            ]
+        ),
+        url(
+            "/repos/fixture-org/private-fixture/commits",
+            page="1",
+            sha="feature/private-fixture",
+            **common,
+        ): response(
+            [
+                commit_item(
+                    SHA_A,
+                    "owner@example.invalid",
+                    "2026-08-09T10:00:00Z",
+                    "private fixture message A",
+                )
+            ]
+        ),
+    }
+    source = GitHubRestActivitySource(
+        StubHttpClient(routes),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    commits = tuple(source.iter_commits(repository, since, until))
+
+    assert [commit.sha for commit in commits] == [SHA_A, SHA_B, SHA_C, SHA_A]
+    assert commits[0].author_email == "owner@example.invalid"
+    assert "private fixture message" not in repr(commits)
+    assert "owner@example.invalid" not in repr(commits)
+
+
+def test_get_file_changes_fetches_all_pages_and_verifies_totals() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    commit_path = f"/repos/fixture-org/private-fixture/commits/{SHA_A}"
+    stats = {"additions": 15, "deletions": 3}
+    routes = {
+        url(commit_path, page="1", per_page="2"): response(
+            {
+                "sha": SHA_A,
+                "stats": stats,
+                "files": [
+                    {
+                        "filename": "src/private_name.py",
+                        "additions": 10,
+                        "deletions": 2,
+                        "patch": "diff",
+                    },
+                    {"filename": "README.md", "additions": 5, "deletions": 1, "patch": "diff"},
+                ],
+            }
+        ),
+        url(commit_path, page="2", per_page="2"): response(
+            {
+                "sha": SHA_A,
+                "stats": stats,
+                "files": [{"filename": "assets/private.png", "additions": 0, "deletions": 0}],
+            }
+        ),
+    }
+    source = GitHubRestActivitySource(
+        StubHttpClient(routes),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    changes = source.get_file_changes(repository, SHA_A)
+
+    assert [(change.additions, change.deletions, change.binary) for change in changes] == [
+        (10, 2, False),
+        (5, 1, False),
+        (0, 0, True),
+    ]
+    assert "private_name.py" not in repr(changes)
+    assert "private.png" not in repr(changes)
+
+
+def test_github_error_redacts_repository_sha_url_and_credential() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    request_url = url(
+        f"/repos/fixture-org/private-fixture/commits/{SHA_A}",
+        page="1",
+        per_page="2",
+    )
+    source = GitHubRestActivitySource(
+        StubHttpClient({request_url: response({"message": "private failure"}, status=404)}),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    with pytest.raises(GitHubApiError) as captured:
+        source.get_file_changes(repository, SHA_A)
+
+    message = str(captured.value)
+    assert "HTTP 404" in message
+    assert "private-fixture" not in message
+    assert SHA_A not in message
+    assert "fixture-credential" not in message
+
+
+def test_github_rejects_credential_for_another_account() -> None:
+    source = GitHubRestActivitySource(
+        StubHttpClient({url("/user"): response({"login": "different-user"})}),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    with pytest.raises(GitHubApiError, match="настроенному аккаунту"):
+        source.list_repositories("octocat")
+
+
+def test_repository_pagination_failure_blocks_partial_result() -> None:
+    first_page_url = url(
+        "/user/repos",
+        affiliation="owner,collaborator,organization_member",
+        direction="asc",
+        page="1",
+        per_page="2",
+        sort="full_name",
+        visibility="all",
+    )
+    second_page_url = url(
+        "/user/repos",
+        affiliation="owner,collaborator,organization_member",
+        direction="asc",
+        page="2",
+        per_page="2",
+        sort="full_name",
+        visibility="all",
+    )
+    source = GitHubRestActivitySource(
+        StubHttpClient(
+            {
+                url("/user"): response({"login": "octocat"}),
+                first_page_url: response(
+                    [
+                        repository_item(1, "fixture-org/private-one", True),
+                        repository_item(2, "fixture-org/private-two", True),
+                    ]
+                ),
+                second_page_url: response({"message": "private failure"}, status=503),
+            }
+        ),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    with pytest.raises(GitHubApiError, match="HTTP 503") as captured:
+        source.list_repositories("octocat")
+
+    assert "private-one" not in str(captured.value)
+    assert "private-two" not in str(captured.value)
+
+
+def test_file_total_mismatch_blocks_incomplete_diff() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    commit_path = f"/repos/fixture-org/private-fixture/commits/{SHA_A}"
+    source = GitHubRestActivitySource(
+        StubHttpClient(
+            {
+                url(commit_path, page="1", per_page="2"): response(
+                    {
+                        "sha": SHA_A,
+                        "stats": {"additions": 99, "deletions": 1},
+                        "files": [
+                            {
+                                "filename": "src/private_name.py",
+                                "additions": 1,
+                                "deletions": 1,
+                                "patch": "diff",
+                            }
+                        ],
+                    }
+                )
+            }
+        ),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    with pytest.raises(GitHubApiError, match="неполной") as captured:
+        source.get_file_changes(repository, SHA_A)
+
+    assert "private_name.py" not in str(captured.value)

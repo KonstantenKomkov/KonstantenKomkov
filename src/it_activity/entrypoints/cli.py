@@ -7,9 +7,15 @@ from collections.abc import Sequence
 from dataclasses import asdict
 from typing import Optional
 
+from it_activity.adapters.credentials import EnvironmentGitHubTokenProvider
 from it_activity.adapters.environment import EnvironmentConfigurationProvider
+from it_activity.adapters.github import GitHubRestActivitySource
+from it_activity.adapters.http import UrllibHttpClient
+from it_activity.adapters.system_clock import SystemClock
+from it_activity.application.collect_activity import CollectActivity, CollectionError
 from it_activity.application.validate_configuration import ValidateConfiguration
 from it_activity.domain.configuration import ConfigurationError
+from it_activity.ports.activity_source import ActivitySourceError
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -22,6 +28,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "validate-config",
         help="проверить конфигурацию и вывести только публичную сводку",
+    )
+    subparsers.add_parser(
+        "collect",
+        help="собрать обезличенные дневные агрегаты из GitHub",
     )
     return parser
 
@@ -42,6 +52,38 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print(f"Ошибка конфигурации: {error}", file=sys.stderr)
             return 2
         print(json.dumps(asdict(summary), ensure_ascii=False, sort_keys=True))
+        return 0
+
+    if arguments.command == "collect":
+        try:
+            token = EnvironmentGitHubTokenProvider().load()
+            report = CollectActivity(
+                configuration_provider=EnvironmentConfigurationProvider(),
+                activity_source=GitHubRestActivitySource(UrllibHttpClient(), token),
+                clock=SystemClock(),
+            ).execute()
+        except (ActivitySourceError, CollectionError, ConfigurationError) as error:
+            print(f"Ошибка сбора: {error}", file=sys.stderr)
+            return 1
+        except Exception:
+            print("Ошибка сбора: непредвиденный внутренний сбой.", file=sys.stderr)
+            return 1
+        public_days = [
+            {
+                "added_lines": day.added_lines,
+                "commits": day.commits,
+                "date": day.day.isoformat(),
+                "deleted_lines": day.deleted_lines,
+            }
+            for day in report.days
+        ]
+        print(
+            json.dumps(
+                {"days": public_days, "timezone": report.timezone},
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
         return 0
 
     parser.error("Неизвестная команда.")
