@@ -4,7 +4,6 @@ import os
 import tempfile
 from collections.abc import Mapping
 from pathlib import Path, PurePosixPath
-from typing import Optional
 
 from it_activity.domain.profile import PUBLIC_OUTPUT_PATHS
 from it_activity.ports.output import PublicOutputError
@@ -92,7 +91,7 @@ class FilesystemPublicOutputWriter:
                 pass
 
     @staticmethod
-    def _close_descriptor(descriptor: Optional[int]) -> None:
+    def _close_descriptor(descriptor: int | None) -> None:
         if descriptor is None:
             return
         try:

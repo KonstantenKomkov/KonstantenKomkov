@@ -4,7 +4,7 @@ import hashlib
 import json
 from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime, timezone
-from typing import Optional, cast
+from typing import cast
 from urllib.parse import quote, urlencode, urlsplit
 
 from it_activity.domain.activity import (
@@ -199,8 +199,8 @@ class GitHubRestActivitySource:
         changes: list[FileChange] = []
         seen_paths: set[str] = set()
         seen_pages: set[bytes] = set()
-        expected_additions: Optional[int] = None
-        expected_deletions: Optional[int] = None
+        expected_additions: int | None = None
+        expected_deletions: int | None = None
 
         for page in range(1, MAX_PAGES + 1):
             value, page_digest = self._get_json_page(path, {}, page)
@@ -319,7 +319,7 @@ class GitHubRestActivitySource:
         self,
         path: str,
         parameters: Mapping[str, str],
-        page: Optional[int],
+        page: int | None,
     ) -> tuple[object, bytes]:
         query = dict(parameters)
         if page is not None:

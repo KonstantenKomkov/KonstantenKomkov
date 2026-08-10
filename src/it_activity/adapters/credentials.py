@@ -2,7 +2,6 @@
 
 import os
 from collections.abc import Mapping
-from typing import Optional
 
 from it_activity.domain.configuration import ConfigurationError
 
@@ -12,7 +11,7 @@ GITHUB_READ_TOKEN_VARIABLE = "IT_ACTIVITY_GITHUB_READ_TOKEN"  # noqa: S105
 class EnvironmentGitHubTokenProvider:
     """Read the private-repository credential from process environment."""
 
-    def __init__(self, environ: Optional[Mapping[str, str]] = None) -> None:
+    def __init__(self, environ: Mapping[str, str] | None = None) -> None:
         self._environ = os.environ if environ is None else environ
 
     def load(self) -> str:

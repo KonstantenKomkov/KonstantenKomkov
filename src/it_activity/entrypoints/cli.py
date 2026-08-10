@@ -6,7 +6,6 @@ import sys
 from collections.abc import Sequence
 from dataclasses import asdict
 from pathlib import Path
-from typing import Optional
 
 from it_activity.adapters.credentials import EnvironmentGitHubTokenProvider
 from it_activity.adapters.environment import EnvironmentConfigurationProvider
@@ -51,7 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return a process exit status."""
     parser = build_parser()
     arguments = parser.parse_args(argv)

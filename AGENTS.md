@@ -78,11 +78,16 @@ Do not add unrelated profile sections, social statistics, badges, time tracking,
 
 ## Canonical local commands
 
+- требуется Python 3.10 или новее;
 - `make bootstrap` — создать `.venv` и установить закреплённые инструменты разработки;
+  если `python3` старше требуемого минимума, передать подходящий интерпретатор,
+  например `make bootstrap SYSTEM_PYTHON=python3.12`;
 - `make format` — отформатировать код и применить безопасные lint-исправления;
 - `make format-check` — проверить форматирование без изменения файлов;
 - `make lint` — запустить статический анализ Ruff;
 - `make typecheck` — запустить строгую проверку типов mypy;
 - `make test` — запустить тесты pytest;
-- `make check` — выполнить все обязательные локальные проверки;
-- `make run` — выполнить пустой локальный CLI-сценарий.
+- `make check` — выполнить все обязательные локальные проверки, включая `pip check`;
+- `make run` — выполнить пустой локальный CLI-сценарий;
+- CI dependency audit и полноисторический secret scan остаются обязательными
+  release checks, даже если соответствующие сетевые инструменты локально недоступны.

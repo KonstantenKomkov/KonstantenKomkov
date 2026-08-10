@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from http.client import HTTPMessage
 from types import TracebackType
-from typing import IO, Optional, Protocol, cast
+from typing import IO, Protocol, cast
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -28,10 +28,10 @@ class _OpenedResponse(_ReadableResponse, Protocol):
 
     def __exit__(
         self,
-        exception_type: Optional[type[BaseException]],
-        exception: Optional[BaseException],
-        traceback: Optional[TracebackType],
-    ) -> Optional[bool]:
+        exception_type: type[BaseException] | None,
+        exception: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool | None:
         """Close the response context."""
 
 
@@ -46,7 +46,7 @@ class _NoRedirectHandler(HTTPRedirectHandler):
         message: str,
         headers: HTTPMessage,
         new_url: str,
-    ) -> Optional[Request]:
+    ) -> Request | None:
         return None
 
 

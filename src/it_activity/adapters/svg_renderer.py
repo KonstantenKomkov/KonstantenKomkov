@@ -295,6 +295,7 @@ class SvgProfileRenderer:
                 days,
                 values,
                 self._series_coordinates(days, maximum, field),
+                strict=True,
             )
         ]
 

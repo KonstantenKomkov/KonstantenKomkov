@@ -18,7 +18,8 @@
 
 Принятые ограничения:
 
-- Python 3.9 или новее;
+- Python 3.10 или новее; минимум повышен в задаче 6 для установки исправленных
+  версий build- и test-инструментов без известных high-severity уязвимостей;
 - runtime-зависимости отсутствуют;
 - конфигурация читается только из окружения, приватные значения не выводятся.
 
@@ -126,3 +127,31 @@
 - push не выполняется при неизменившемся публичном результате и не использует force.
 
 Артефакты: `.github/workflows/update-profile.yml`, `src/it_activity/domain/configuration.py`, `src/it_activity/adapters/environment.py`, `src/it_activity/application/collect_activity.py`, `src/it_activity/application/collect_usage.py`, `tests/architecture/test_update_workflow.py`, `tests/unit/application/test_collect_activity.py`, `tests/unit/application/test_collect_usage.py`, `docs/configuration.md`, `docs/automation.md`.
+
+### 6. Добавить проверки качества и безопасности
+
+- [x] Покрыть unit-тестами границы периодов, дедупликацию, фильтрацию авторов, подсчёт строк и агрегацию языков.
+- [x] Добавить интеграционные тесты на локальных Git-репозиториях и snapshot-тесты SVG.
+- [x] Проверять, что сгенерированные публичные файлы не содержат приватных названий, URL, путей, email и сообщений коммитов.
+- [x] Запускать в CI formatter, linter, type checker, тесты, dependency audit, CodeQL и поиск секретов.
+- [x] Закрепить сторонние GitHub Actions полными commit SHA.
+- [x] Блокировать выпуск при найденных секретах или известных уязвимостях высокой и критической важности.
+
+Критерий готовности: все проверки проходят, секреты отсутствуют в истории Git, а публичный результат содержит только разрешённые агрегаты.
+
+Результат:
+
+- unit-тесты контролируют календарные границы, timezone, авторов, глобальную SHA-дедупликацию, file exclusions, line counts, языки, технологии и рендеринг;
+- end-to-end integration-тест создаёт временный локальный Git-репозиторий с несколькими ветками, повторным SHA и приватными metadata, затем проверяет агрегаты и полный публичный вывод;
+- CI запускает Ruff formatter/linter, строгий mypy, 90 тестов и `pip check` на Python 3.10 и 3.14;
+- изолированный `pip-audit` проверяет закреплённые dev/build и собственные audit dependencies и блокирует любой известный advisory, что строже порога high/critical;
+- Gitleaks с полной историей блокирует секреты без comments, summary или artifacts, а CodeQL выполняет расширенный Python-анализ;
+- статические тесты требуют полный commit SHA у каждого внешнего Action и fail-closed конфигурацию security jobs.
+
+Принятые ограничения:
+
+- минимальная версия повышена до Python 3.10, поскольку исправленный `setuptools` без известных high-severity уязвимостей не поддерживает Python 3.9;
+- для принудительной защиты основной ветки и version tags владелец должен включить описанные required checks в GitHub ruleset без bypass;
+- Gitleaks Action не требует license secret в репозитории личного аккаунта, но при переносе в организацию понадобится `GITLEAKS_LICENSE`.
+
+Артефакты: `.github/workflows/ci.yml`, `.github/workflows/codeql.yml`, `requirements-dev.lock`, `requirements-audit.lock`, `tests/integration/test_local_git_profile.py`, `tests/architecture/test_update_workflow.py`, `tests/unit/`, `tests/unit/adapters/test_svg_renderer.py`, `docs/quality-security.md`, `Makefile`, `pyproject.toml`, `AGENTS.md`.

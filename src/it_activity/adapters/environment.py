@@ -2,7 +2,6 @@
 
 import os
 from collections.abc import Mapping
-from typing import Optional
 
 from it_activity.domain.configuration import (
     DEFAULT_TIMEZONE,
@@ -20,7 +19,7 @@ EXPECTED_REPOSITORIES_VARIABLE = "IT_ACTIVITY_EXPECTED_REPOSITORIES"
 class EnvironmentConfigurationProvider:
     """Read profile settings from process environment variables."""
 
-    def __init__(self, environ: Optional[Mapping[str, str]] = None) -> None:
+    def __init__(self, environ: Mapping[str, str] | None = None) -> None:
         self._environ = os.environ if environ is None else environ
 
     def load(self) -> ProfileConfiguration:

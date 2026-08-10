@@ -125,7 +125,7 @@ class ActivityReport:
     def __post_init__(self) -> None:
         if not self.days or len(self.days) > MAX_HISTORY_DAYS:
             raise ActivityDataError("Отчёт должен содержать от 1 до 365 дней.")
-        for previous, current in zip(self.days, self.days[1:]):
+        for previous, current in zip(self.days, self.days[1:], strict=False):
             if current.day != previous.day + timedelta(days=1):
                 raise ActivityDataError("Дни отчёта должны идти подряд.")
 

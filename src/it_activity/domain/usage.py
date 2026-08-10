@@ -3,7 +3,6 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import Optional
 
 from it_activity.domain.linguist_languages import ALLOWED_LINGUIST_LANGUAGES
 
@@ -132,7 +131,7 @@ class UsageReport:
     technologies: tuple[TechnologyUsage, ...]
 
 
-def allowlisted_manifest_marker(path: str) -> Optional[str]:
+def allowlisted_manifest_marker(path: str) -> str | None:
     """Reduce a private path to an allowlisted public manifest marker."""
     if not path or any(character in path for character in "\r\n\0"):
         return None
