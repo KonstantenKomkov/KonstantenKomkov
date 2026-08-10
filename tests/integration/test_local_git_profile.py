@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -261,9 +262,19 @@ def create_private_repository(repository: Path) -> None:
     )
 
 
-def test_local_git_profile_aggregates_and_never_publishes_private_values(
-    tmp_path: Path,
-) -> None:
+@dataclass(frozen=True)
+class LocalProfileFixture:
+    """Assembled test-only profile dependencies and filesystem locations."""
+
+    repository: Path
+    output: Path
+    activity_provider: CollectActivity
+    usage_provider: CollectUsage
+
+
+@pytest.fixture
+def local_profile_fixture(tmp_path: Path) -> LocalProfileFixture:
+    """Create a fresh private repository and assemble both aggregation use cases."""
     repository = tmp_path / "private-worktree"
     output = tmp_path / "public-output"
     output.mkdir()
@@ -284,14 +295,11 @@ def test_local_git_profile_aggregates_and_never_publishes_private_values(
     )
     usage_provider = CollectUsage(configuration_provider, source)
 
-    activity = activity_provider.execute()
-    usage = usage_provider.execute()
-    result = GenerateProfile(
-        activity_provider,
-        usage_provider,
-        SvgProfileRenderer(),
-        FilesystemPublicOutputWriter(output),
-    ).execute()
+    return LocalProfileFixture(repository, output, activity_provider, usage_provider)
+
+
+def test_local_git_activity_aggregation(local_profile_fixture: LocalProfileFixture) -> None:
+    activity = local_profile_fixture.activity_provider.execute()
 
     assert activity.totals(365).commits == 2
     assert activity.totals(365).added_lines == 5
@@ -299,15 +307,33 @@ def test_local_git_profile_aggregates_and_never_publishes_private_values(
     assert next(day for day in activity.days if day.day.isoformat() == "2026-08-08").commits == 1
     assert activity.days[-1].day.isoformat() == "2026-08-10"
     assert activity.days[-1].commits == 1
+
+
+def test_local_git_usage_aggregation(local_profile_fixture: LocalProfileFixture) -> None:
+    usage = local_profile_fixture.usage_provider.execute()
+
     assert [(item.name, item.share_basis_points) for item in usage.languages] == [
         ("Python", 7500),
         ("Other", 2500),
     ]
     assert [(item.name, item.repository_count) for item in usage.technologies] == [("Python", 1)]
+
+
+def test_local_git_public_output_never_contains_private_values(
+    local_profile_fixture: LocalProfileFixture,
+) -> None:
+    result = GenerateProfile(
+        local_profile_fixture.activity_provider,
+        local_profile_fixture.usage_provider,
+        SvgProfileRenderer(),
+        FilesystemPublicOutputWriter(local_profile_fixture.output),
+    ).execute()
+
     assert result.changed_file_count == len(PUBLIC_OUTPUT_PATHS)
 
     public_output = "\n".join(
-        (output / path).read_text(encoding="utf-8") for path in sorted(PUBLIC_OUTPUT_PATHS)
+        (local_profile_fixture.output / path).read_text(encoding="utf-8")
+        for path in sorted(PUBLIC_OUTPUT_PATHS)
     )
     for private_value in (
         PRIVATE_REPOSITORY_NAME,
@@ -323,6 +349,6 @@ def test_local_git_profile_aggregates_and_never_publishes_private_values(
         PRIVATE_WEB_PATH,
         OTHER_PRIVATE_PATH,
         "Private Internal DSL",
-        str(repository),
+        str(local_profile_fixture.repository),
     ):
         assert private_value not in public_output

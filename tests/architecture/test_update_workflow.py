@@ -90,7 +90,9 @@ def test_security_workflows_fail_closed_without_public_finding_artifacts() -> No
         "make lint",
         "make typecheck",
         "make test PYTEST_ARGS=tests/architecture",
-        "make test PYTEST_ARGS=tests/integration",
+        'make test PYTEST_ARGS="tests/integration -k local_git_activity"',
+        'make test PYTEST_ARGS="tests/integration -k local_git_usage"',
+        'make test PYTEST_ARGS="tests/integration -k local_git_public_output"',
         "make test PYTEST_ARGS=tests/unit",
         "make dependency-check",
     ):

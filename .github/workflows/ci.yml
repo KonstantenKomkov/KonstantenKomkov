@@ -56,8 +56,14 @@ jobs:
       - name: Run architecture tests
         run: make test PYTEST_ARGS=tests/architecture
 
-      - name: Run integration tests
-        run: make test PYTEST_ARGS=tests/integration
+      - name: Run activity integration test
+        run: make test PYTEST_ARGS="tests/integration -k local_git_activity"
+
+      - name: Run usage integration test
+        run: make test PYTEST_ARGS="tests/integration -k local_git_usage"
+
+      - name: Run public-output integration test
+        run: make test PYTEST_ARGS="tests/integration -k local_git_public_output"
 
       - name: Run unit tests
         run: make test PYTEST_ARGS=tests/unit
