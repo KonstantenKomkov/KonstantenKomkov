@@ -192,29 +192,42 @@ class LocalGitSource:
             raise AssertionError(f"SAFE_PHASE:git-refs-{kind}") from error
         for ref in refs:
             try:
-                log = run_git(
+                revision_shas = run_git(
                     self._repository,
-                    "log",
-                    "--no-show-signature",
-                    "--no-notes",
-                    "--no-decorate",
-                    "--no-color",
+                    "rev-list",
                     f"--since={since.isoformat()}",
                     f"--until={until.isoformat()}",
-                    "--format=%H%x09%aI%x09%ae",
                     ref,
                     "--",
-                )
+                ).splitlines()
             except AssertionError:
                 raise
             except Exception as error:
                 kind = safe_exception_kind(error)
-                raise AssertionError(f"SAFE_PHASE:git-log-{kind}") from error
-            for line in log.splitlines():
+                raise AssertionError(f"SAFE_PHASE:git-rev-list-{kind}") from error
+            for sha in revision_shas:
                 try:
-                    sha, authored_at, author_email = line.split("\t", maxsplit=2)
+                    metadata = run_git(
+                        self._repository,
+                        "show",
+                        "--no-patch",
+                        "--no-show-signature",
+                        "--no-notes",
+                        "--no-decorate",
+                        "--no-color",
+                        "--format=%aI%x09%ae",
+                        sha,
+                        "--",
+                    ).rstrip("\n")
+                except AssertionError:
+                    raise
                 except Exception as error:
-                    raise AssertionError("SAFE_PHASE:log-fields") from error
+                    kind = safe_exception_kind(error)
+                    raise AssertionError(f"SAFE_PHASE:git-show-metadata-{kind}") from error
+                try:
+                    authored_at, author_email = metadata.split("\t", maxsplit=1)
+                except Exception as error:
+                    raise AssertionError("SAFE_PHASE:metadata-fields") from error
                 try:
                     parsed_authored_at = datetime.fromisoformat(authored_at)
                 except Exception as error:
