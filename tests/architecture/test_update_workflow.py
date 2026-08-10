@@ -89,7 +89,9 @@ def test_security_workflows_fail_closed_without_public_finding_artifacts() -> No
         "make format-check",
         "make lint",
         "make typecheck",
-        "make test",
+        "make test PYTEST_ARGS=tests/architecture",
+        "make test PYTEST_ARGS=tests/integration",
+        "make test PYTEST_ARGS=tests/unit",
         "make dependency-check",
     ):
         assert f"run: {command}" in ci

@@ -53,8 +53,14 @@ jobs:
       - name: Run type checker
         run: make typecheck
 
-      - name: Run tests
-        run: make test
+      - name: Run architecture tests
+        run: make test PYTEST_ARGS=tests/architecture
+
+      - name: Run integration tests
+        run: make test PYTEST_ARGS=tests/integration
+
+      - name: Run unit tests
+        run: make test PYTEST_ARGS=tests/unit
 
       - name: Check dependency consistency
         run: make dependency-check

@@ -4,6 +4,7 @@ PYTHON := $(VENV)/bin/python
 RUFF := $(VENV)/bin/ruff
 MYPY := $(VENV)/bin/mypy
 PYTEST := $(VENV)/bin/pytest
+PYTEST_ARGS ?=
 
 .PHONY: bootstrap format format-check lint typecheck test dependency-check check run
 
@@ -27,7 +28,7 @@ typecheck:
 	$(MYPY) src tests
 
 test:
-	$(PYTEST)
+	$(PYTEST) $(PYTEST_ARGS)
 
 dependency-check:
 	$(PYTHON) -m pip check
