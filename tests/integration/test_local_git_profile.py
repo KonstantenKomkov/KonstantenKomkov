@@ -78,6 +78,7 @@ def run_git(
     if executable is None:
         pytest.skip("Git is required for local repository integration tests.")
     safe_environment = {
+        "GIT_CONFIG_GLOBAL": os.devnull,
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_TERMINAL_PROMPT": "0",
         "LANG": "C",
