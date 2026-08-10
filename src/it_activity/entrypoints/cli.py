@@ -7,7 +7,8 @@ from collections.abc import Sequence
 from dataclasses import asdict
 from pathlib import Path
 
-from it_activity.adapters.credentials import EnvironmentGitHubTokenProvider
+from it_activity.adapters.composite_github import CompositeGitHubActivitySource
+from it_activity.adapters.credentials import EnvironmentGitHubTokensProvider
 from it_activity.adapters.environment import EnvironmentConfigurationProvider
 from it_activity.adapters.filesystem import FilesystemPublicOutputWriter
 from it_activity.adapters.github import GitHubRestActivitySource
@@ -22,6 +23,17 @@ from it_activity.domain.configuration import ConfigurationError
 from it_activity.ports.activity_source import ActivitySourceError
 from it_activity.ports.output import PublicOutputError
 from it_activity.ports.rendering import ProfileRenderingError
+
+
+def _build_activity_source() -> CompositeGitHubActivitySource:
+    """Build one private-safe source from every independently scoped token."""
+    http_client = UrllibHttpClient()
+    return CompositeGitHubActivitySource(
+        tuple(
+            GitHubRestActivitySource(http_client, token)
+            for token in EnvironmentGitHubTokensProvider().load()
+        )
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -70,10 +82,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if arguments.command == "collect":
         try:
-            token = EnvironmentGitHubTokenProvider().load()
             activity_report = CollectActivity(
                 configuration_provider=EnvironmentConfigurationProvider(),
-                activity_source=GitHubRestActivitySource(UrllibHttpClient(), token),
+                activity_source=_build_activity_source(),
                 clock=SystemClock(),
             ).execute()
         except (ActivitySourceError, CollectionError, ConfigurationError) as error:
@@ -102,10 +113,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if arguments.command == "usage":
         try:
-            token = EnvironmentGitHubTokenProvider().load()
             usage_report = CollectUsage(
                 configuration_provider=EnvironmentConfigurationProvider(),
-                usage_source=GitHubRestActivitySource(UrllibHttpClient(), token),
+                usage_source=_build_activity_source(),
             ).execute()
         except (ActivitySourceError, ConfigurationError, UsageCollectionError) as error:
             print(f"Ошибка сбора: {error}", file=sys.stderr)
@@ -129,9 +139,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if arguments.command == "generate":
         try:
-            token = EnvironmentGitHubTokenProvider().load()
             configuration_provider = EnvironmentConfigurationProvider()
-            source = GitHubRestActivitySource(UrllibHttpClient(), token)
+            source = _build_activity_source()
             result = GenerateProfile(
                 activity_provider=CollectActivity(
                     configuration_provider=configuration_provider,
