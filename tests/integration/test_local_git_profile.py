@@ -207,31 +207,34 @@ class LocalGitSource:
                 raise AssertionError(f"SAFE_PHASE:git-rev-list-{kind}") from error
             for sha in revision_shas:
                 try:
-                    metadata = run_git(
+                    raw_commit = run_git(
                         self._repository,
-                        "show",
-                        "--no-patch",
-                        "--no-show-signature",
-                        "--no-notes",
-                        "--no-decorate",
-                        "--no-color",
-                        "--format=%aI%x09%ae",
+                        "cat-file",
+                        "commit",
                         sha,
-                        "--",
-                    ).rstrip("\n")
+                    )
                 except AssertionError:
                     raise
                 except Exception as error:
                     kind = safe_exception_kind(error)
-                    raise AssertionError(f"SAFE_PHASE:git-show-metadata-{kind}") from error
+                    raise AssertionError(f"SAFE_PHASE:git-cat-file-{kind}") from error
                 try:
-                    authored_at, author_email = metadata.split("\t", maxsplit=1)
+                    author_header = next(
+                        line for line in raw_commit.splitlines() if line.startswith("author ")
+                    )
                 except Exception as error:
-                    raise AssertionError("SAFE_PHASE:metadata-fields") from error
+                    raise AssertionError("SAFE_PHASE:author-header") from error
                 try:
-                    parsed_authored_at = datetime.fromisoformat(authored_at)
+                    identity, timestamp, _offset = author_header.removeprefix("author ").rsplit(
+                        " ", maxsplit=2
+                    )
+                    email_start = identity.rfind("<")
+                    if email_start < 0 or not identity.endswith(">"):
+                        raise ValueError
+                    author_email = identity[email_start + 1 : -1]
+                    parsed_authored_at = datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
                 except Exception as error:
-                    raise AssertionError("SAFE_PHASE:log-timestamp") from error
+                    raise AssertionError("SAFE_PHASE:author-fields") from error
                 try:
                     yield CommitMetadata(
                         sha=sha,
