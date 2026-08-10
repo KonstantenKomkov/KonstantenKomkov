@@ -14,6 +14,7 @@ def test_empty_cli_scenario_prints_help(capsys: pytest.CaptureFixture[str]) -> N
     assert exit_code == 0
     assert "validate-config" in captured.out
     assert "collect" in captured.out
+    assert "usage" in captured.out
     assert captured.err == ""
 
 
@@ -56,7 +57,9 @@ def test_validate_config_reports_safe_error(
     assert "private-owner@example.invalid" not in captured.err
 
 
-def test_collect_requires_read_token_without_exposing_private_configuration(
+@pytest.mark.parametrize("command", ["collect", "usage"])
+def test_collection_requires_read_token_without_exposing_private_configuration(
+    command: str,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -65,7 +68,7 @@ def test_collect_requires_read_token_without_exposing_private_configuration(
     monkeypatch.setenv("IT_ACTIVITY_EXCLUDED_REPOSITORIES", "private-owner/private-project")
     monkeypatch.delenv("IT_ACTIVITY_GITHUB_READ_TOKEN", raising=False)
 
-    exit_code = main(["collect"])
+    exit_code = main([command])
 
     captured = capsys.readouterr()
     assert exit_code == 1

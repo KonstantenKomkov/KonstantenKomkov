@@ -20,18 +20,25 @@ class RepositoryReference:
     repository_id: int
     full_name: str
     private: bool
+    default_branch: str = "main"
+    empty: bool = False
 
     def __post_init__(self) -> None:
         components = self.full_name.split("/")
         has_control_character = any(character in self.full_name for character in "\r\n\0")
+        invalid_branch = not self.default_branch or any(
+            character in self.default_branch for character in "\r\n\0"
+        )
         if (
             not isinstance(self.repository_id, int)
             or isinstance(self.repository_id, bool)
             or self.repository_id <= 0
             or not isinstance(self.private, bool)
+            or not isinstance(self.empty, bool)
             or len(components) != 2
             or not all(components)
             or has_control_character
+            or invalid_branch
         ):
             raise ActivityDataError("Некорректно задан идентификатор репозитория.")
 

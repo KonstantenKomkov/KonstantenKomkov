@@ -13,6 +13,7 @@ from it_activity.domain.activity import (
     FileChange,
     RepositoryReference,
 )
+from it_activity.domain.usage import allowlisted_manifest_marker
 from it_activity.ports.activity_source import ActivitySourceError
 from it_activity.ports.http import HttpClient, HttpTransportError
 
@@ -21,6 +22,7 @@ GITHUB_API_VERSION = "2026-03-10"
 DEFAULT_PAGE_SIZE = 100
 MAX_PAGES = 10_000
 MAX_COMMIT_FILES = 3_000
+MAX_TREE_REQUESTS = 100_000
 
 
 class GitHubApiError(ActivitySourceError):
@@ -84,11 +86,59 @@ class GitHubRestActivitySource:
                         repository_id=self._required_integer(item, "id"),
                         full_name=self._required_string(item, "full_name"),
                         private=self._required_boolean(item, "private"),
+                        default_branch=self._required_string(item, "default_branch"),
+                        empty=self._repository_is_empty(item),
                     )
                 )
         except ActivityDataError:
             raise GitHubApiError("GitHub вернул некорректные данные репозитория.") from None
         return tuple(repositories)
+
+    def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
+        """Return byte counts calculated by GitHub Linguist for the default branch."""
+        repository_path = quote(repository.full_name, safe="/")
+        value = self._as_object(self._get_json(f"/repos/{repository_path}/languages"))
+        language_bytes: dict[str, int] = {}
+        for language, byte_count in value.items():
+            if (
+                not language
+                or not isinstance(byte_count, int)
+                or isinstance(byte_count, bool)
+                or byte_count < 0
+                or any(character in language for character in "\r\n\0")
+            ):
+                raise GitHubApiError("GitHub вернул некорректную языковую статистику.")
+            language_bytes[language] = byte_count
+        return language_bytes
+
+    def list_manifest_markers(self, repository: RepositoryReference) -> Sequence[str]:
+        """Traverse the default tree and return no private paths, only allowlisted markers."""
+        repository_path = quote(repository.full_name, safe="/")
+        default_ref = repository.default_branch
+        recursive_tree = self._get_tree(repository_path, default_ref, recursive=True)
+        if not self._required_boolean(recursive_tree, "truncated"):
+            recursive_markers, _ = self._tree_markers_and_subtrees(recursive_tree)
+            return tuple(sorted(recursive_markers))
+
+        markers: set[str] = set()
+        pending_refs = [default_ref]
+        visited_refs: set[str] = set()
+        request_count = 0
+        while pending_refs:
+            tree_ref = pending_refs.pop()
+            if tree_ref in visited_refs:
+                continue
+            visited_refs.add(tree_ref)
+            request_count += 1
+            if request_count > MAX_TREE_REQUESTS:
+                raise GitHubApiError("Дерево GitHub превысило допустимое число поддеревьев.")
+            tree = self._get_tree(repository_path, tree_ref, recursive=False)
+            if self._required_boolean(tree, "truncated"):
+                raise GitHubApiError("GitHub вернул усечённое поддерево репозитория.")
+            tree_markers, subtree_refs = self._tree_markers_and_subtrees(tree)
+            markers.update(tree_markers)
+            pending_refs.extend(subtree_refs)
+        return tuple(sorted(markers))
 
     def iter_commits(
         self,
@@ -223,6 +273,41 @@ class GitHubRestActivitySource:
         value, _ = self._get_json_page(path, {}, None)
         return value
 
+    def _get_tree(
+        self,
+        repository_path: str,
+        tree_ref: str,
+        recursive: bool,
+    ) -> dict[str, object]:
+        encoded_ref = quote(tree_ref, safe="")
+        parameters = {"recursive": "1"} if recursive else {}
+        value, _ = self._get_json_page(
+            f"/repos/{repository_path}/git/trees/{encoded_ref}",
+            parameters,
+            None,
+        )
+        return self._as_object(value)
+
+    def _tree_markers_and_subtrees(
+        self,
+        tree: Mapping[str, object],
+    ) -> tuple[set[str], list[str]]:
+        markers: set[str] = set()
+        subtree_refs: list[str] = []
+        for entry_value in self._as_array(tree.get("tree")):
+            entry = self._as_object(entry_value)
+            entry_type = self._required_string(entry, "type")
+            path = self._required_string(entry, "path")
+            if entry_type == "blob":
+                marker = allowlisted_manifest_marker(path)
+                if marker is not None:
+                    markers.add(marker)
+            elif entry_type == "tree":
+                subtree_refs.append(self._required_string(entry, "sha"))
+            elif entry_type != "commit":
+                raise GitHubApiError("GitHub вернул неизвестный тип элемента дерева.")
+        return markers, subtree_refs
+
     def _get_json_page(
         self,
         path: str,
@@ -326,3 +411,12 @@ class GitHubRestActivitySource:
         if not isinstance(result, bool):
             raise GitHubApiError("В ответе GitHub отсутствует обязательный флаг.")
         return result
+
+    @staticmethod
+    def _repository_is_empty(value: Mapping[str, object]) -> bool:
+        if "pushed_at" not in value:
+            raise GitHubApiError("В ответе GitHub отсутствует статус репозитория.")
+        pushed_at = value["pushed_at"]
+        if pushed_at is not None and not isinstance(pushed_at, str):
+            raise GitHubApiError("GitHub вернул некорректный статус репозитория.")
+        return pushed_at is None

@@ -13,6 +13,7 @@ from it_activity.adapters.github import GitHubRestActivitySource
 from it_activity.adapters.http import UrllibHttpClient
 from it_activity.adapters.system_clock import SystemClock
 from it_activity.application.collect_activity import CollectActivity, CollectionError
+from it_activity.application.collect_usage import CollectUsage, UsageCollectionError
 from it_activity.application.validate_configuration import ValidateConfiguration
 from it_activity.domain.configuration import ConfigurationError
 from it_activity.ports.activity_source import ActivitySourceError
@@ -32,6 +33,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "collect",
         help="собрать обезличенные дневные агрегаты из GitHub",
+    )
+    subparsers.add_parser(
+        "usage",
+        help="собрать обезличенные языки и технологии из GitHub",
     )
     return parser
 
@@ -57,7 +62,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if arguments.command == "collect":
         try:
             token = EnvironmentGitHubTokenProvider().load()
-            report = CollectActivity(
+            activity_report = CollectActivity(
                 configuration_provider=EnvironmentConfigurationProvider(),
                 activity_source=GitHubRestActivitySource(UrllibHttpClient(), token),
                 clock=SystemClock(),
@@ -75,11 +80,38 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "date": day.day.isoformat(),
                 "deleted_lines": day.deleted_lines,
             }
-            for day in report.days
+            for day in activity_report.days
         ]
         print(
             json.dumps(
-                {"days": public_days, "timezone": report.timezone},
+                {"days": public_days, "timezone": activity_report.timezone},
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    if arguments.command == "usage":
+        try:
+            token = EnvironmentGitHubTokenProvider().load()
+            usage_report = CollectUsage(
+                configuration_provider=EnvironmentConfigurationProvider(),
+                usage_source=GitHubRestActivitySource(UrllibHttpClient(), token),
+            ).execute()
+        except (ActivitySourceError, ConfigurationError, UsageCollectionError) as error:
+            print(f"Ошибка сбора: {error}", file=sys.stderr)
+            return 1
+        except Exception:
+            print("Ошибка сбора: непредвиденный внутренний сбой.", file=sys.stderr)
+            return 1
+        print(
+            json.dumps(
+                {
+                    "languages": [asdict(language) for language in usage_report.languages],
+                    "technologies": [
+                        asdict(technology) for technology in usage_report.technologies
+                    ],
+                },
                 ensure_ascii=False,
                 sort_keys=True,
             )

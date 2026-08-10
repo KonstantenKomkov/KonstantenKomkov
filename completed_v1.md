@@ -49,3 +49,27 @@
 - тесты не требуют реального GitHub-токена и используют только вымышленные public/private fixtures.
 
 Артефакты: `src/it_activity/domain/activity.py`, `src/it_activity/domain/source_files.py`, `src/it_activity/application/collect_activity.py`, `src/it_activity/adapters/github.py`, `src/it_activity/adapters/http.py`, `src/it_activity/entrypoints/cli.py`, `tests/unit/`, `docs/activity-semantics.md`.
+
+### 3. Определить языки и технологии
+
+- [x] Агрегировать языки программирования по данным GitHub Linguist.
+- [x] Определять технологии по разрешённому набору манифестов, например `package.json`, `pyproject.toml`, `go.mod`, Gradle-файлам и `Dockerfile`.
+- [x] Ограничить публичный результат названиями языков, технологий и их агрегированными долями или частотой использования.
+
+Критерий готовности: карточка показывает актуальные языки и технологии, не раскрывая структуру и зависимости отдельных приватных проектов.
+
+Результат:
+
+- GitHub adapter агрегирует байтовую статистику endpoint `/languages`, рассчитанную Linguist по default branch;
+- полный allowlist содержит 825 официальных имён GitHub Linguist, закреплённых commit `46e68a1dec7765b602ec9601693b10e0763436b1`, а неизвестные имена объединяются как `Other`;
+- технологии считаются не более одного раза на репозиторий по явному allowlist manifest-файлов;
+- приватный Git tree полностью обходится даже при `truncated=true`, но наружу adapter возвращает только безопасные manifest markers;
+- CLI-команда `usage` выводит только allowlisted имена, basis-point доли и агрегированную частоту по репозиториям; эти данные готовы для SVG-карточки задачи 4.
+
+Принятые ограничения:
+
+- содержимое манифестов и названия зависимостей не читаются;
+- технологии определяются только по имени manifest-файла на default branch;
+- ошибка любого дерева или поддерева блокирует весь результат.
+
+Артефакты: `src/it_activity/domain/usage.py`, `src/it_activity/domain/linguist_languages.py`, `src/it_activity/application/collect_usage.py`, `src/it_activity/ports/usage_source.py`, `src/it_activity/adapters/github.py`, `src/it_activity/entrypoints/cli.py`, `tests/unit/domain/test_usage.py`, `tests/unit/application/test_collect_usage.py`, `tests/unit/adapters/test_github.py`, `docs/activity-semantics.md`.

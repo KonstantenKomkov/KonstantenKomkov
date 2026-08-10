@@ -42,8 +42,20 @@ class StubHttpClient:
         return self._responses[request_url]
 
 
-def repository_item(identifier: int, full_name: str, private: bool) -> dict[str, object]:
-    return {"id": identifier, "full_name": full_name, "private": private}
+def repository_item(
+    identifier: int,
+    full_name: str,
+    private: bool,
+    default_branch: str = "main",
+    pushed_at: object = "2026-08-01T00:00:00Z",
+) -> dict[str, object]:
+    return {
+        "id": identifier,
+        "full_name": full_name,
+        "private": private,
+        "default_branch": default_branch,
+        "pushed_at": pushed_at,
+    }
 
 
 def commit_item(sha: str, email: str, date: str, message: str) -> dict[str, object]:
@@ -98,6 +110,7 @@ def test_list_repositories_checks_identity_and_fetches_every_page() -> None:
         (2, True),
         (3, True),
     ]
+    assert all(item.default_branch == "main" and not item.empty for item in repositories)
     assert all("fixture-credential" not in request_url for request_url, _ in http_client.requests)
     assert all(
         headers["Authorization"] == "Bearer fixture-credential"
@@ -347,3 +360,113 @@ def test_file_total_mismatch_blocks_incomplete_diff() -> None:
         source.get_file_changes(repository, SHA_A)
 
     assert "private_name.py" not in str(captured.value)
+
+
+def test_get_language_bytes_returns_linguist_counts_without_repository_details() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    source = GitHubRestActivitySource(
+        StubHttpClient(
+            {
+                url("/repos/fixture-org/private-fixture/languages"): response(
+                    {"Python": 120, "Private Fixture Language": 30}
+                )
+            }
+        ),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    languages = source.get_language_bytes(repository)
+
+    assert languages == {"Python": 120, "Private Fixture Language": 30}
+    assert "private-fixture" not in repr(languages)
+
+
+def test_manifest_tree_returns_only_allowlisted_markers() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    tree_url = url(
+        "/repos/fixture-org/private-fixture/git/trees/main",
+        recursive="1",
+    )
+    source = GitHubRestActivitySource(
+        StubHttpClient(
+            {
+                tree_url: response(
+                    {
+                        "truncated": False,
+                        "tree": [
+                            {
+                                "path": "private/service/package.json",
+                                "type": "blob",
+                                "sha": "1" * 40,
+                            },
+                            {
+                                "path": "private/unique-name.secret",
+                                "type": "blob",
+                                "sha": "2" * 40,
+                            },
+                            {
+                                "path": "private/backend/service.csproj",
+                                "type": "blob",
+                                "sha": "3" * 40,
+                            },
+                        ],
+                    }
+                )
+            }
+        ),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    markers = source.list_manifest_markers(repository)
+
+    assert markers == (".csproj", "package.json")
+    assert "private" not in repr(markers)
+    assert "unique-name" not in repr(markers)
+
+
+def test_truncated_manifest_tree_falls_back_to_complete_subtree_walk() -> None:
+    subtree_sha = "1" * 40
+    repository = RepositoryReference(
+        1,
+        "fixture-org/private-fixture",
+        private=True,
+        default_branch="feature/private",
+    )
+    tree_path = "/repos/fixture-org/private-fixture/git/trees/feature%2Fprivate"
+    routes = {
+        url(tree_path, recursive="1"): response({"truncated": True, "tree": []}),
+        url(tree_path): response(
+            {
+                "truncated": False,
+                "tree": [
+                    {"path": "private-directory", "type": "tree", "sha": subtree_sha},
+                    {"path": "Dockerfile", "type": "blob", "sha": "2" * 40},
+                ],
+            }
+        ),
+        url(f"/repos/fixture-org/private-fixture/git/trees/{subtree_sha}"): response(
+            {
+                "truncated": False,
+                "tree": [
+                    {"path": "pyproject.toml", "type": "blob", "sha": "3" * 40},
+                    {"path": "private-dependency.json", "type": "blob", "sha": "4" * 40},
+                ],
+            }
+        ),
+    }
+    source = GitHubRestActivitySource(
+        StubHttpClient(routes),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    markers = source.list_manifest_markers(repository)
+
+    assert markers == ("Dockerfile", "pyproject.toml")
+    assert "private-directory" not in repr(markers)
+    assert "private-dependency" not in repr(markers)
