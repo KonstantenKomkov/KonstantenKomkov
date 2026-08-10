@@ -44,8 +44,20 @@ jobs:
       - name: Install pinned development tools
         run: make bootstrap SYSTEM_PYTHON=python
 
-      - name: Run formatter, linter, type checker, and tests
-        run: make check
+      - name: Check formatting
+        run: make format-check
+
+      - name: Run linter
+        run: make lint
+
+      - name: Run type checker
+        run: make typecheck
+
+      - name: Run tests
+        run: make test
+
+      - name: Check dependency consistency
+        run: make dependency-check
 
   dependency-audit:
     name: Dependency audit

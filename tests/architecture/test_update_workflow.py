@@ -85,7 +85,14 @@ def test_security_workflows_fail_closed_without_public_finding_artifacts() -> No
     codeql = (WORKFLOW_ROOT / "codeql.yml").read_text(encoding="utf-8")
     combined = "\n".join(all_workflows())
 
-    assert "run: make check" in ci
+    for command in (
+        "make format-check",
+        "make lint",
+        "make typecheck",
+        "make test",
+        "make dependency-check",
+    ):
+        assert f"run: {command}" in ci
     assert "requirements-audit.lock" in ci
     assert "python -m pip_audit --strict --no-deps --disable-pip" in ci
     assert "requirements-dev.lock" in ci
