@@ -104,12 +104,15 @@ def test_list_repositories_checks_identity_and_fetches_every_page() -> None:
     )
 
     repositories = source.list_repositories("OCTOCAT")
+    cached_repositories = source.list_repositories("octocat")
 
     assert [(item.repository_id, item.private) for item in repositories] == [
         (1, False),
         (2, True),
         (3, True),
     ]
+    assert cached_repositories == repositories
+    assert len(http_client.requests) == 3
     assert all(item.default_branch == "main" and not item.empty for item in repositories)
     assert all("fixture-credential" not in request_url for request_url, _ in http_client.requests)
     assert all(

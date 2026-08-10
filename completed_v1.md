@@ -73,3 +73,30 @@
 - ошибка любого дерева или поддерева блокирует весь результат.
 
 Артефакты: `src/it_activity/domain/usage.py`, `src/it_activity/domain/linguist_languages.py`, `src/it_activity/application/collect_usage.py`, `src/it_activity/ports/usage_source.py`, `src/it_activity/adapters/github.py`, `src/it_activity/entrypoints/cli.py`, `tests/unit/domain/test_usage.py`, `tests/unit/application/test_collect_usage.py`, `tests/unit/adapters/test_github.py`, `docs/activity-semantics.md`.
+
+### 4. Сгенерировать графики и профильный README
+
+- [x] Сгенерировать SVG-графики коммитов для периодов 7, 30 и 365 дней.
+- [x] Сгенерировать SVG-графики добавленных и удалённых строк для периодов 7, 30 и 365 дней.
+- [x] Сгенерировать отдельную SVG-карточку языков и технологий.
+- [x] Обеспечить читаемость SVG в светлой и тёмной темах GitHub и на мобильной ширине.
+- [x] Собрать `README.md` только из блоков активности, строк кода, языков и технологий.
+- [x] Реализовать выбор периода через поддерживаемые GitHub секции `<details>`; период 30 дней открыть по умолчанию.
+
+Критерий готовности: на странице профиля можно раскрыть любой из трёх периодов и увидеть соответствующие графики без внешнего сервера и JavaScript.
+
+Результат:
+
+- детерминированный renderer создаёт полный фиксированный набор из `README.md`, шести SVG-графиков и карточки языков и технологий;
+- графики используют встроенные светлую и тёмную темы, масштабируемый `viewBox` и сохраняют читаемость на мобильной ширине;
+- README содержит только разрешённые блоки в трёх секциях `<details>`, причём период 30 дней открыт по умолчанию;
+- CLI-команда `generate` сначала полностью собирает и визуализирует данные, затем атомарно заменяет только изменившиеся allowlisted-файлы;
+- snapshot-, структурные и отрицательные privacy-тесты контролируют детерминированность, корректность SVG и отсутствие приватных fixture-значений.
+
+Принятые ограничения:
+
+- SVG не используют JavaScript, внешние шрифты, изображения, стили или серверы;
+- renderer принимает только уже обезличенные агрегаты и не получает репозиторные метаданные;
+- публичный filesystem adapter пишет только восемь заранее определённых путей внутри корня репозитория и отклоняет символьные ссылки наружу.
+
+Артефакты: `README.md`, `generated/`, `src/it_activity/domain/profile.py`, `src/it_activity/application/generate_profile.py`, `src/it_activity/ports/rendering.py`, `src/it_activity/ports/output.py`, `src/it_activity/adapters/svg_renderer.py`, `src/it_activity/adapters/filesystem.py`, `src/it_activity/entrypoints/cli.py`, `tests/unit/adapters/test_svg_renderer.py`, `tests/unit/adapters/test_filesystem.py`, `tests/unit/application/test_generate_profile.py`.

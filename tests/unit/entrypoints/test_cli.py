@@ -15,6 +15,7 @@ def test_empty_cli_scenario_prints_help(capsys: pytest.CaptureFixture[str]) -> N
     assert "validate-config" in captured.out
     assert "collect" in captured.out
     assert "usage" in captured.out
+    assert "generate" in captured.out
     assert captured.err == ""
 
 
@@ -57,7 +58,7 @@ def test_validate_config_reports_safe_error(
     assert "private-owner@example.invalid" not in captured.err
 
 
-@pytest.mark.parametrize("command", ["collect", "usage"])
+@pytest.mark.parametrize("command", ["collect", "usage", "generate"])
 def test_collection_requires_read_token_without_exposing_private_configuration(
     command: str,
     monkeypatch: pytest.MonkeyPatch,

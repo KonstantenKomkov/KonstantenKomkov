@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" width="720" height="260" style="max-width:100%;height:auto" role="img" aria-labelledby="title description" preserveAspectRatio="xMidYMid meet">
+<title id="title">Строки кода за 7 дней</title>
+<desc id="description">Добавлено 0, удалено 0 строк исходного кода.</desc>
+<style>text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1f2328; }
+.surface { fill: #ffffff; stroke: #d0d7de; }
+.title { font-size: 21px; font-weight: 650; }
+.metric { font-size: 14px; font-weight: 600; }
+.label { font-size: 12px; }
+.muted { fill: #656d76; }
+.grid { stroke: #d8dee4; stroke-width: 1; }
+.track { fill: #eaeef2; }
+.commit-bar { fill: #2f81f7; }
+.added-line { fill: none; stroke: #1a7f37; }
+.deleted-line { fill: none; stroke: #cf222e; }
+.added-marker { fill: #1a7f37; stroke: #1a7f37; }
+.deleted-marker { fill: #cf222e; stroke: #cf222e; }
+.added-text { fill: #1a7f37; }
+.deleted-text { fill: #cf222e; }
+.language { fill: #8250df; }
+.technology { fill: #0969da; }
+@media (prefers-color-scheme: dark) {
+  text { fill: #f0f6fc; }
+  .surface { fill: #0d1117; stroke: #30363d; }
+  .muted { fill: #8b949e; }
+  .grid { stroke: #30363d; }
+  .track { fill: #21262d; }
+  .commit-bar { fill: #58a6ff; }
+  .added-line { stroke: #3fb950; }
+  .deleted-line { stroke: #f85149; }
+  .added-marker { fill: #3fb950; stroke: #3fb950; }
+  .deleted-marker { fill: #f85149; stroke: #f85149; }
+  .added-text { fill: #3fb950; }
+  .deleted-text { fill: #f85149; }
+  .language { fill: #a371f7; }
+  .technology { fill: #58a6ff; }
+}</style>
+<rect class="surface" x="1" y="1" width="718" height="258" rx="12" />
+<text class="title" x="28" y="38">Строки кода</text>
+<text class="metric added-text" x="28" y="64">+0</text>
+<text class="metric deleted-text" x="150" y="64">−0</text>
+<text class="label muted" x="696" y="80" text-anchor="end">макс. 0</text>
+<line class="grid" x1="54" y1="88" x2="696" y2="88" />
+<line class="grid" x1="54" y1="210" x2="696" y2="210" />
+<polyline class="added-line" points="54,210 161,210 268,210 375,210 482,210 589,210 696,210" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+<polyline class="deleted-line" points="54,210 161,210 268,210 375,210 482,210 589,210 696,210" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+<circle class="added-marker" cx="54" cy="210" r="2.4"><title>2026-08-04: 0</title></circle>
+<circle class="added-marker" cx="161" cy="210" r="2.4"><title>2026-08-05: 0</title></circle>
+<circle class="added-marker" cx="268" cy="210" r="2.4"><title>2026-08-06: 0</title></circle>
+<circle class="added-marker" cx="375" cy="210" r="2.4"><title>2026-08-07: 0</title></circle>
+<circle class="added-marker" cx="482" cy="210" r="2.4"><title>2026-08-08: 0</title></circle>
+<circle class="added-marker" cx="589" cy="210" r="2.4"><title>2026-08-09: 0</title></circle>
+<circle class="added-marker" cx="696" cy="210" r="2.4"><title>2026-08-10: 0</title></circle>
+<circle class="deleted-marker" cx="54" cy="210" r="2.4"><title>2026-08-04: 0</title></circle>
+<circle class="deleted-marker" cx="161" cy="210" r="2.4"><title>2026-08-05: 0</title></circle>
+<circle class="deleted-marker" cx="268" cy="210" r="2.4"><title>2026-08-06: 0</title></circle>
+<circle class="deleted-marker" cx="375" cy="210" r="2.4"><title>2026-08-07: 0</title></circle>
+<circle class="deleted-marker" cx="482" cy="210" r="2.4"><title>2026-08-08: 0</title></circle>
+<circle class="deleted-marker" cx="589" cy="210" r="2.4"><title>2026-08-09: 0</title></circle>
+<circle class="deleted-marker" cx="696" cy="210" r="2.4"><title>2026-08-10: 0</title></circle>
+<text class="label muted" x="54" y="238">04.08.2026</text>
+<text class="label muted" x="696" y="238" text-anchor="end">10.08.2026</text>
+</svg>

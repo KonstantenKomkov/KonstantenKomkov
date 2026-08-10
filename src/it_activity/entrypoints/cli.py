@@ -5,18 +5,24 @@ import json
 import sys
 from collections.abc import Sequence
 from dataclasses import asdict
+from pathlib import Path
 from typing import Optional
 
 from it_activity.adapters.credentials import EnvironmentGitHubTokenProvider
 from it_activity.adapters.environment import EnvironmentConfigurationProvider
+from it_activity.adapters.filesystem import FilesystemPublicOutputWriter
 from it_activity.adapters.github import GitHubRestActivitySource
 from it_activity.adapters.http import UrllibHttpClient
+from it_activity.adapters.svg_renderer import SvgProfileRenderer
 from it_activity.adapters.system_clock import SystemClock
 from it_activity.application.collect_activity import CollectActivity, CollectionError
 from it_activity.application.collect_usage import CollectUsage, UsageCollectionError
+from it_activity.application.generate_profile import GenerateProfile, ProfileGenerationError
 from it_activity.application.validate_configuration import ValidateConfiguration
 from it_activity.domain.configuration import ConfigurationError
 from it_activity.ports.activity_source import ActivitySourceError
+from it_activity.ports.output import PublicOutputError
+from it_activity.ports.rendering import ProfileRenderingError
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -37,6 +43,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "usage",
         help="собрать обезличенные языки и технологии из GitHub",
+    )
+    subparsers.add_parser(
+        "generate",
+        help="собрать и записать полный профильный README и SVG",
     )
     return parser
 
@@ -116,6 +126,41 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 sort_keys=True,
             )
         )
+        return 0
+
+    if arguments.command == "generate":
+        try:
+            token = EnvironmentGitHubTokenProvider().load()
+            configuration_provider = EnvironmentConfigurationProvider()
+            source = GitHubRestActivitySource(UrllibHttpClient(), token)
+            result = GenerateProfile(
+                activity_provider=CollectActivity(
+                    configuration_provider=configuration_provider,
+                    activity_source=source,
+                    clock=SystemClock(),
+                ),
+                usage_provider=CollectUsage(
+                    configuration_provider=configuration_provider,
+                    usage_source=source,
+                ),
+                renderer=SvgProfileRenderer(),
+                output_writer=FilesystemPublicOutputWriter(Path.cwd()),
+            ).execute()
+        except (
+            ActivitySourceError,
+            CollectionError,
+            ConfigurationError,
+            ProfileGenerationError,
+            ProfileRenderingError,
+            PublicOutputError,
+            UsageCollectionError,
+        ) as error:
+            print(f"Ошибка генерации: {error}", file=sys.stderr)
+            return 1
+        except Exception:
+            print("Ошибка генерации: непредвиденный внутренний сбой.", file=sys.stderr)
+            return 1
+        print(json.dumps(asdict(result), ensure_ascii=False, sort_keys=True))
         return 0
 
     parser.error("Неизвестная команда.")

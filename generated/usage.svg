@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 180" width="720" height="180" style="max-width:100%;height:auto" role="img" aria-labelledby="title description" preserveAspectRatio="xMidYMid meet">
+<title id="title">Языки и технологии</title>
+<desc id="description">Агрегированные доли языков и частота технологий по репозиториям.</desc>
+<style>text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1f2328; }
+.surface { fill: #ffffff; stroke: #d0d7de; }
+.title { font-size: 21px; font-weight: 650; }
+.metric { font-size: 14px; font-weight: 600; }
+.label { font-size: 12px; }
+.muted { fill: #656d76; }
+.grid { stroke: #d8dee4; stroke-width: 1; }
+.track { fill: #eaeef2; }
+.commit-bar { fill: #2f81f7; }
+.added-line { fill: none; stroke: #1a7f37; }
+.deleted-line { fill: none; stroke: #cf222e; }
+.added-marker { fill: #1a7f37; stroke: #1a7f37; }
+.deleted-marker { fill: #cf222e; stroke: #cf222e; }
+.added-text { fill: #1a7f37; }
+.deleted-text { fill: #cf222e; }
+.language { fill: #8250df; }
+.technology { fill: #0969da; }
+@media (prefers-color-scheme: dark) {
+  text { fill: #f0f6fc; }
+  .surface { fill: #0d1117; stroke: #30363d; }
+  .muted { fill: #8b949e; }
+  .grid { stroke: #30363d; }
+  .track { fill: #21262d; }
+  .commit-bar { fill: #58a6ff; }
+  .added-line { stroke: #3fb950; }
+  .deleted-line { stroke: #f85149; }
+  .added-marker { fill: #3fb950; stroke: #3fb950; }
+  .deleted-marker { fill: #f85149; stroke: #f85149; }
+  .added-text { fill: #3fb950; }
+  .deleted-text { fill: #f85149; }
+  .language { fill: #a371f7; }
+  .technology { fill: #58a6ff; }
+}</style>
+<rect class="surface" x="1" y="1" width="718" height="178" rx="12" />
+<text class="title" x="28" y="38">Языки и технологии</text>
+<text class="metric" x="28" y="76">Языки</text>
+<text class="metric" x="382" y="76">Технологии</text>
+<text class="label muted" x="28" y="108">Нет данных</text>
+<text class="label muted" x="382" y="108">Нет данных</text>
+</svg>

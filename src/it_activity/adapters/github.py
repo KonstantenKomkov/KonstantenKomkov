@@ -60,9 +60,14 @@ class GitHubRestActivitySource:
         self._api_url = normalized_api_url
         self._api_origin = (parsed_api_url.scheme, parsed_api_url.netloc)
         self._page_size = page_size
+        self._repository_cache: dict[str, tuple[RepositoryReference, ...]] = {}
 
     def list_repositories(self, owner_login: str) -> Sequence[RepositoryReference]:
         """Return all repositories explicitly readable by the authenticated user."""
+        cache_key = owner_login.casefold()
+        cached = self._repository_cache.get(cache_key)
+        if cached is not None:
+            return cached
         authenticated_user = self._as_object(self._get_json("/user"))
         authenticated_login = self._required_string(authenticated_user, "login")
         if authenticated_login.casefold() != owner_login.casefold():
@@ -92,7 +97,9 @@ class GitHubRestActivitySource:
                 )
         except ActivityDataError:
             raise GitHubApiError("GitHub вернул некорректные данные репозитория.") from None
-        return tuple(repositories)
+        result = tuple(repositories)
+        self._repository_cache[cache_key] = result
+        return result
 
     def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
         """Return byte counts calculated by GitHub Linguist for the default branch."""
