@@ -11,7 +11,8 @@ _EMAIL_PATTERN = compile_pattern(r"^[^@\s]+@[^@\s]+$")
 _REPOSITORY_NAME_PATTERN = compile_pattern(r"^[A-Za-z0-9._-]{1,100}$")
 
 
-def _valid_repository_full_name(value: str) -> bool:
+def valid_repository_full_name(value: str) -> bool:
+    """Return whether a value is a canonical GitHub owner/repository name."""
     components = value.split("/")
     return (
         len(components) == 2
@@ -55,9 +56,9 @@ class ProfileConfiguration:
             raise ConfigurationError("Некорректно задан список авторских email.")
         if not expected:
             raise ConfigurationError("Не задано ни одного ожидаемого репозитория.")
-        if any(not _valid_repository_full_name(repository) for repository in exclusions):
+        if any(not valid_repository_full_name(repository) for repository in exclusions):
             raise ConfigurationError("Некорректно задан список исключений.")
-        if any(not _valid_repository_full_name(repository) for repository in expected):
+        if any(not valid_repository_full_name(repository) for repository in expected):
             raise ConfigurationError("Некорректно задан список ожидаемых репозиториев.")
 
         try:

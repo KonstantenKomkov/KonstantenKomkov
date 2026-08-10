@@ -7,12 +7,17 @@ from collections.abc import Sequence
 from dataclasses import asdict
 from pathlib import Path
 
+from it_activity.adapters.composite_activity import CompositeActivitySource
 from it_activity.adapters.composite_github import CompositeGitHubActivitySource
 from it_activity.adapters.credentials import EnvironmentGitHubTokensProvider
 from it_activity.adapters.environment import EnvironmentConfigurationProvider
 from it_activity.adapters.filesystem import FilesystemPublicOutputWriter
 from it_activity.adapters.github import GitHubRestActivitySource
 from it_activity.adapters.http import UrllibHttpClient
+from it_activity.adapters.local_git import (
+    EnvironmentLocalRepositoryPathsProvider,
+    LocalGitActivitySource,
+)
 from it_activity.adapters.svg_renderer import SvgProfileRenderer
 from it_activity.adapters.system_clock import SystemClock
 from it_activity.application.collect_activity import CollectActivity, CollectionError
@@ -20,12 +25,13 @@ from it_activity.application.collect_usage import CollectUsage, UsageCollectionE
 from it_activity.application.generate_profile import GenerateProfile, ProfileGenerationError
 from it_activity.application.validate_configuration import ValidateConfiguration
 from it_activity.domain.configuration import ConfigurationError
-from it_activity.ports.activity_source import ActivitySourceError
+from it_activity.ports.activity_source import ActivitySource, ActivitySourceError
+from it_activity.ports.configuration import ConfigurationProvider
 from it_activity.ports.output import PublicOutputError
 from it_activity.ports.rendering import ProfileRenderingError
 
 
-def _build_activity_source() -> CompositeGitHubActivitySource:
+def _build_github_source() -> CompositeGitHubActivitySource:
     """Build one private-safe source from every independently scoped token."""
     http_client = UrllibHttpClient()
     return CompositeGitHubActivitySource(
@@ -33,6 +39,23 @@ def _build_activity_source() -> CompositeGitHubActivitySource:
             GitHubRestActivitySource(http_client, token)
             for token in EnvironmentGitHubTokensProvider().load()
         )
+    )
+
+
+def _with_optional_local_activity(
+    github_source: CompositeGitHubActivitySource,
+) -> tuple[ActivitySource, ConfigurationProvider]:
+    """Extend GitHub activity with local clones configured only at runtime."""
+    repository_paths = EnvironmentLocalRepositoryPathsProvider().load()
+    if not repository_paths:
+        return github_source, EnvironmentConfigurationProvider()
+
+    local_source = LocalGitActivitySource(repository_paths)
+    return (
+        CompositeActivitySource((github_source, local_source)),
+        EnvironmentConfigurationProvider(
+            additional_expected_repositories=local_source.repository_names
+        ),
     )
 
 
@@ -49,7 +72,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers.add_parser(
         "collect",
-        help="собрать обезличенные дневные агрегаты из GitHub",
+        help="собрать обезличенные дневные агрегаты из настроенных источников",
     )
     subparsers.add_parser(
         "usage",
@@ -82,9 +105,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if arguments.command == "collect":
         try:
+            github_source = _build_github_source()
+            activity_source, activity_configuration_provider = _with_optional_local_activity(
+                github_source
+            )
             activity_report = CollectActivity(
-                configuration_provider=EnvironmentConfigurationProvider(),
-                activity_source=_build_activity_source(),
+                configuration_provider=activity_configuration_provider,
+                activity_source=activity_source,
                 clock=SystemClock(),
             ).execute()
         except (ActivitySourceError, CollectionError, ConfigurationError) as error:
@@ -115,7 +142,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         try:
             usage_report = CollectUsage(
                 configuration_provider=EnvironmentConfigurationProvider(),
-                usage_source=_build_activity_source(),
+                usage_source=_build_github_source(),
             ).execute()
         except (ActivitySourceError, ConfigurationError, UsageCollectionError) as error:
             print(f"Ошибка сбора: {error}", file=sys.stderr)
@@ -140,16 +167,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     if arguments.command == "generate":
         try:
             configuration_provider = EnvironmentConfigurationProvider()
-            source = _build_activity_source()
+            github_source = _build_github_source()
+            activity_source, activity_configuration_provider = _with_optional_local_activity(
+                github_source
+            )
             result = GenerateProfile(
                 activity_provider=CollectActivity(
-                    configuration_provider=configuration_provider,
-                    activity_source=source,
+                    configuration_provider=activity_configuration_provider,
+                    activity_source=activity_source,
                     clock=SystemClock(),
                 ),
                 usage_provider=CollectUsage(
                     configuration_provider=configuration_provider,
-                    usage_source=source,
+                    usage_source=github_source,
                 ),
                 renderer=SvgProfileRenderer(),
                 output_writer=FilesystemPublicOutputWriter(Path.cwd()),

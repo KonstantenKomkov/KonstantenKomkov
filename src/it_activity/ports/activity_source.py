@@ -12,10 +12,10 @@ class ActivitySourceError(RuntimeError):
 
 
 class ActivitySource(Protocol):
-    """Read all repositories and their bounded branch history."""
+    """Read all repositories configured for one bounded activity source."""
 
     def list_repositories(self, owner_login: str) -> Sequence[RepositoryReference]:
-        """Return every public and private repository visible to the credential."""
+        """Return every public and private repository available to the source."""
 
     def iter_commits(
         self,

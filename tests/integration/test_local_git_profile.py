@@ -3,7 +3,7 @@
 import os
 import shutil
 import subprocess
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,17 +11,19 @@ from pathlib import Path
 import pytest
 
 from it_activity.adapters.filesystem import FilesystemPublicOutputWriter
+from it_activity.adapters.local_git import LocalGitActivitySource
 from it_activity.adapters.svg_renderer import SvgProfileRenderer
 from it_activity.application.collect_activity import CollectActivity
 from it_activity.application.collect_usage import CollectUsage
 from it_activity.application.generate_profile import GenerateProfile
-from it_activity.domain.activity import CommitMetadata, FileChange, RepositoryReference
+from it_activity.domain.activity import FileChange, RepositoryReference
 from it_activity.domain.configuration import ProfileConfiguration
 from it_activity.domain.profile import PUBLIC_OUTPUT_PATHS
 from it_activity.domain.usage import allowlisted_manifest_marker
+from it_activity.ports.activity_source import ActivitySourceError
 
 PRIVATE_REPOSITORY_NAME = "fixture-org/private-project"
-PRIVATE_REPOSITORY_URL = "https://example.invalid/fixture-org/private-project.git"
+PRIVATE_REPOSITORY_URL = "git@github.com:fixture-org/private-project.git"
 PRIVATE_PATH = "src/private/customer_name.py"
 PRIVATE_EMAIL = "private-owner@example.invalid"
 PRIVATE_MESSAGE = "private fixture customer migration"
@@ -122,92 +124,16 @@ class FixedClock:
         return self._current
 
 
-class LocalGitSource:
-    """Test-only adapter exposing a temporary Git repository through both source ports."""
+class LocalUsageSource:
+    """Test-only usage adapter for the temporary private repository."""
 
-    def __init__(self, repository: Path) -> None:
+    def __init__(self, repository: Path, reference: RepositoryReference) -> None:
         self._repository = repository
-        self._reference = RepositoryReference(
-            repository_id=1,
-            full_name=PRIVATE_REPOSITORY_NAME,
-            private=True,
-        )
+        self._reference = reference
 
     def list_repositories(self, owner_login: str) -> Sequence[RepositoryReference]:
         assert owner_login == "octocat"
         return (self._reference,)
-
-    def iter_commits(
-        self,
-        repository: RepositoryReference,
-        since: datetime,
-        until: datetime,
-    ) -> Iterable[CommitMetadata]:
-        assert repository == self._reference
-        refs = run_git(
-            self._repository,
-            "for-each-ref",
-            "--format=%(refname)",
-            "refs/heads",
-        ).splitlines()
-        for ref in refs:
-            revision_shas = run_git(
-                self._repository,
-                "rev-list",
-                f"--since={since.isoformat()}",
-                f"--until={until.isoformat()}",
-                ref,
-                "--",
-            ).splitlines()
-            for sha in revision_shas:
-                raw_commit = run_git(
-                    self._repository,
-                    "cat-file",
-                    "commit",
-                    sha,
-                )
-                author_header = next(
-                    line for line in raw_commit.splitlines() if line.startswith("author ")
-                )
-                identity, timestamp, _offset = author_header.removeprefix("author ").rsplit(
-                    " ", maxsplit=2
-                )
-                email_start = identity.rfind("<")
-                if email_start < 0 or not identity.endswith(">"):
-                    raise AssertionError("Failed to parse the local Git fixture.")
-                yield CommitMetadata(
-                    sha=sha,
-                    authored_at=datetime.fromtimestamp(int(timestamp), tz=timezone.utc),
-                    author_email=identity[email_start + 1 : -1],
-                )
-
-    def get_file_changes(
-        self,
-        repository: RepositoryReference,
-        commit_sha: str,
-    ) -> Sequence[FileChange]:
-        assert repository == self._reference
-        numstat = run_git(
-            self._repository,
-            "show",
-            "--format=",
-            "--numstat",
-            commit_sha,
-            "--",
-        )
-        changes: list[FileChange] = []
-        for line in numstat.splitlines():
-            additions, deletions, path = line.split("\t", maxsplit=2)
-            binary = additions == "-" or deletions == "-"
-            changes.append(
-                FileChange(
-                    path=path,
-                    additions=0 if binary else int(additions),
-                    deletions=0 if binary else int(deletions),
-                    binary=binary,
-                )
-            )
-        return tuple(changes)
 
     def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
         assert repository == self._reference
@@ -302,13 +228,15 @@ def local_profile_fixture(tmp_path: Path) -> LocalProfileFixture:
         timezone="Europe/Moscow",
     )
     configuration_provider = StaticConfigurationProvider(configuration)
-    source = LocalGitSource(repository)
+    activity_source = LocalGitActivitySource((repository,))
+    reference = activity_source.list_repositories("octocat")[0]
+    usage_source = LocalUsageSource(repository, reference)
     activity_provider = CollectActivity(
         configuration_provider,
-        source,
+        activity_source,
         FixedClock(datetime(2026, 8, 10, 9, 0, tzinfo=timezone.utc)),
     )
-    usage_provider = CollectUsage(configuration_provider, source)
+    usage_provider = CollectUsage(configuration_provider, usage_source)
 
     return LocalProfileFixture(repository, output, activity_provider, usage_provider)
 
@@ -367,3 +295,119 @@ def test_local_git_public_output_never_contains_private_values(
         str(local_profile_fixture.repository),
     ):
         assert private_value not in public_output
+
+
+def test_local_git_activity_rejects_unsafe_origin_without_exposing_private_values(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "private-unsafe-origin"
+    repository.mkdir()
+    run_git(repository, "init", "--quiet", "--initial-branch=main")
+    private_remote = (
+        "https://private-user:private-password@example.invalid/fixture-org/private-project.git"
+    )
+    run_git(repository, "remote", "add", "origin", private_remote)
+
+    with pytest.raises(ActivitySourceError) as captured:
+        LocalGitActivitySource((repository,))
+
+    message = str(captured.value)
+    assert "безопасного GitHub origin" in message
+    assert str(repository) not in message
+    assert private_remote not in message
+    assert "private-password" not in message
+
+
+def test_local_git_activity_rejects_missing_path_without_exposing_it(tmp_path: Path) -> None:
+    missing_path = tmp_path / "private-missing-repository"
+
+    with pytest.raises(ActivitySourceError) as captured:
+        LocalGitActivitySource((missing_path,))
+
+    message = str(captured.value)
+    assert "недоступен" in message
+    assert str(missing_path) not in message
+    assert "private-missing-repository" not in message
+
+
+def test_local_git_activity_uses_rename_detection_instead_of_counting_line_churn(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "private-rename-repository"
+    repository.mkdir()
+    run_git(repository, "init", "--quiet", "--initial-branch=main")
+    run_git(repository, "remote", "add", "origin", PRIVATE_REPOSITORY_URL)
+    old_path = "src/private_old_name.py"
+    new_path = "src/private_new_name.py"
+    write_fixture(repository, old_path, "PRIVATE_RENAME_VALUE = 1\n")
+    commit_fixture(
+        repository,
+        "private rename base",
+        PRIVATE_EMAIL,
+        datetime(2026, 8, 8, 10, 0, tzinfo=timezone.utc),
+    )
+    (repository / old_path).rename(repository / new_path)
+    commit_fixture(
+        repository,
+        "private pure rename",
+        PRIVATE_EMAIL,
+        datetime(2026, 8, 9, 10, 0, tzinfo=timezone.utc),
+    )
+    rename_sha = run_git(repository, "rev-parse", "HEAD").strip()
+    source = LocalGitActivitySource((repository,))
+    reference = source.list_repositories("octocat")[0]
+
+    changes = source.get_file_changes(reference, rename_sha)
+
+    assert changes == (FileChange(path=new_path, additions=0, deletions=0, binary=False),)
+
+
+def test_local_git_activity_rejects_shallow_history_without_exposing_private_values(
+    tmp_path: Path,
+) -> None:
+    source_repository = tmp_path / "private-full-source"
+    source_repository.mkdir()
+    run_git(source_repository, "init", "--quiet", "--initial-branch=main")
+    write_fixture(source_repository, PRIVATE_PATH, f"{PRIVATE_SOURCE}\n")
+    commit_fixture(
+        source_repository,
+        PRIVATE_MESSAGE,
+        PRIVATE_EMAIL,
+        datetime(2026, 8, 8, 10, 0, tzinfo=timezone.utc),
+    )
+    shallow_repository = tmp_path / "private-shallow-clone"
+    run_git(
+        tmp_path,
+        "clone",
+        "--quiet",
+        "--depth=1",
+        source_repository.as_uri(),
+        str(shallow_repository),
+    )
+
+    with pytest.raises(ActivitySourceError) as captured:
+        LocalGitActivitySource((shallow_repository,))
+
+    message = str(captured.value)
+    assert "неполной" in message
+    assert str(source_repository) not in message
+    assert str(shallow_repository) not in message
+    assert PRIVATE_REPOSITORY_NAME not in message
+
+
+def test_local_git_activity_rejects_partial_clone_configuration_without_network(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "private-partial-repository"
+    repository.mkdir()
+    run_git(repository, "init", "--quiet", "--initial-branch=main")
+    run_git(repository, "remote", "add", "origin", PRIVATE_REPOSITORY_URL)
+    run_git(repository, "config", "--local", "remote.origin.promisor", "true")
+
+    with pytest.raises(ActivitySourceError) as captured:
+        LocalGitActivitySource((repository,))
+
+    message = str(captured.value)
+    assert "неполной" in message
+    assert str(repository) not in message
+    assert PRIVATE_REPOSITORY_URL not in message

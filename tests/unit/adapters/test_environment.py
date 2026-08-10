@@ -44,6 +44,24 @@ def test_environment_provider_uses_default_timezone() -> None:
     assert configuration.timezone == "Europe/Moscow"
 
 
+def test_environment_provider_extends_expected_repositories_in_process() -> None:
+    configuration = EnvironmentConfigurationProvider(
+        {
+            "IT_ACTIVITY_GITHUB_LOGIN": "octocat",
+            "IT_ACTIVITY_AUTHOR_EMAILS": "owner@example.invalid",
+            "IT_ACTIVITY_EXPECTED_REPOSITORIES": "octocat/profile",
+        },
+        additional_expected_repositories=(
+            "fixture-org/local-private",
+            "octocat/profile",
+        ),
+    ).load()
+
+    assert configuration.expected_repositories == frozenset(
+        {"octocat/profile", "fixture-org/local-private"}
+    )
+
+
 @pytest.mark.parametrize(
     "missing_variable",
     [

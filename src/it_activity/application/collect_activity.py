@@ -110,12 +110,14 @@ class CollectActivity:
         for repository in repositories:
             normalized_name = repository.full_name.casefold()
             if repository.repository_id in repository_ids or normalized_name in full_names:
-                raise CollectionError("GitHub вернул повторяющийся репозиторий.")
+                raise CollectionError("Источник активности вернул повторяющийся репозиторий.")
             repository_ids.add(repository.repository_id)
             full_names.add(normalized_name)
         expected = {repository.casefold() for repository in expected_repositories}
         if not expected.issubset(full_names):
-            raise CollectionError("GitHub не предоставил доступ ко всем ожидаемым репозиториям.")
+            raise CollectionError(
+                "Источники активности не предоставили доступ ко всем ожидаемым репозиториям."
+            )
         return repositories
 
     def _source_line_counts(

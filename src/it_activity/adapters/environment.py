@@ -1,7 +1,7 @@
 """Environment-backed configuration adapter."""
 
 import os
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 
 from it_activity.domain.configuration import (
     DEFAULT_TIMEZONE,
@@ -20,8 +20,13 @@ ADDITIONAL_EXPECTED_REPOSITORIES_VARIABLE = "IT_ACTIVITY_ADDITIONAL_EXPECTED_REP
 class EnvironmentConfigurationProvider:
     """Read profile settings from process environment variables."""
 
-    def __init__(self, environ: Mapping[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        environ: Mapping[str, str] | None = None,
+        additional_expected_repositories: Iterable[str] = (),
+    ) -> None:
         self._environ = os.environ if environ is None else environ
+        self._additional_expected_repositories = tuple(additional_expected_repositories)
 
     def load(self) -> ProfileConfiguration:
         """Load and validate configuration without exposing raw values."""
@@ -33,6 +38,7 @@ class EnvironmentConfigurationProvider:
             (
                 *self._split(self._required(EXPECTED_REPOSITORIES_VARIABLE)),
                 *self._split(self._environ.get(ADDITIONAL_EXPECTED_REPOSITORIES_VARIABLE, "")),
+                *self._additional_expected_repositories,
             )
         )
 

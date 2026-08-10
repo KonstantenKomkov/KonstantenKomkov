@@ -1,9 +1,14 @@
 """Tests for the command-line entrypoint."""
 
 import json
+from pathlib import Path
+from typing import cast
 
 import pytest
 
+from it_activity.adapters.composite_activity import CompositeActivitySource
+from it_activity.adapters.composite_github import CompositeGitHubActivitySource
+from it_activity.entrypoints import cli
 from it_activity.entrypoints.cli import main
 
 
@@ -77,3 +82,40 @@ def test_collection_requires_read_token_without_exposing_private_configuration(
     assert "IT_ACTIVITY_GITHUB_READ_TOKEN" in captured.err
     assert "private-owner@example.invalid" not in captured.err
     assert "private-owner/private-project" not in captured.err
+
+
+def test_activity_assembly_is_unchanged_without_local_paths(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("IT_ACTIVITY_LOCAL_REPOSITORIES", raising=False)
+    github_source = cast(CompositeGitHubActivitySource, object())
+
+    activity_source, _configuration_provider = cli._with_optional_local_activity(github_source)
+
+    assert activity_source is github_source
+
+
+def test_activity_assembly_adds_runtime_local_repositories_to_expected_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    local_path = Path("/private/fixture-local-clone")
+    monkeypatch.setenv("IT_ACTIVITY_LOCAL_REPOSITORIES", str(local_path))
+    monkeypatch.setenv("IT_ACTIVITY_GITHUB_LOGIN", "octocat")
+    monkeypatch.setenv("IT_ACTIVITY_AUTHOR_EMAILS", "private-owner@example.invalid")
+    monkeypatch.setenv("IT_ACTIVITY_EXPECTED_REPOSITORIES", "octocat/profile")
+
+    class StubLocalGitActivitySource:
+        repository_names = frozenset({"fixture-org/private-local"})
+
+        def __init__(self, repository_paths: tuple[Path, ...]) -> None:
+            assert repository_paths == (local_path,)
+
+    monkeypatch.setattr(cli, "LocalGitActivitySource", StubLocalGitActivitySource)
+    github_source = cast(CompositeGitHubActivitySource, object())
+
+    activity_source, configuration_provider = cli._with_optional_local_activity(github_source)
+
+    assert isinstance(activity_source, CompositeActivitySource)
+    assert configuration_provider.load().expected_repositories == frozenset(
+        {"octocat/profile", "fixture-org/private-local"}
+    )
