@@ -195,10 +195,15 @@ class LocalGitSource:
                 log = run_git(
                     self._repository,
                     "log",
-                    ref,
+                    "--no-show-signature",
+                    "--no-notes",
+                    "--no-decorate",
+                    "--no-color",
                     f"--since={since.isoformat()}",
                     f"--until={until.isoformat()}",
                     "--format=%H%x09%aI%x09%ae",
+                    ref,
+                    "--",
                 )
             except AssertionError:
                 raise
