@@ -104,6 +104,8 @@ def test_security_workflows_fail_closed_without_public_finding_artifacts() -> No
     assert 'GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"' in ci
     assert 'GITLEAKS_ENABLE_COMMENTS: "false"' in ci
     assert 'GITLEAKS_VERSION: "8.28.0"' in ci
+    assert ci.count(">/dev/null 2>&1") == 3
+    assert "test_output=" not in ci
     assert "needs.dependency-audit.result" in ci
     assert "needs.secret-scan.result" in ci
     assert "github/codeql-action/init@" in codeql
