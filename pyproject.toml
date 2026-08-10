@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools==75.8.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "it-activity"
+version = "0.1.0"
+description = "Aggregate private-safe GitHub profile activity"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+it-activity = "it_activity.entrypoints.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "RUF", "S", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/**/*.py" = ["RUF001"]
+"tests/**/*.py" = ["S101"]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+mypy_path = "src"
+warn_unused_configs = true

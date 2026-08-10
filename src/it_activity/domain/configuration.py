@@ -1,0 +1,53 @@
+"""Configuration values that are independent from their external source."""
+
+from dataclasses import dataclass, field
+from re import compile as compile_pattern
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+DEFAULT_TIMEZONE = "Europe/Moscow"
+
+_GITHUB_LOGIN_PATTERN = compile_pattern(r"^(?!-)(?!.*--)[A-Za-z0-9-]{1,39}(?<!-)$")
+_EMAIL_PATTERN = compile_pattern(r"^[^@\s]+@[^@\s]+$")
+
+
+class ConfigurationError(ValueError):
+    """A safe-to-display configuration validation error."""
+
+
+@dataclass(frozen=True, repr=False)
+class ProfileConfiguration:
+    """Validated owner configuration without credential data."""
+
+    github_login: str
+    author_emails: frozenset[str]
+    timezone: str = DEFAULT_TIMEZONE
+    excluded_repositories: frozenset[str] = field(default_factory=frozenset)
+
+    def __post_init__(self) -> None:
+        login = self.github_login.strip()
+        emails = frozenset(
+            email.strip().casefold() for email in self.author_emails if email.strip()
+        )
+        timezone = self.timezone.strip()
+        exclusions = frozenset(
+            repository.strip() for repository in self.excluded_repositories if repository.strip()
+        )
+
+        if _GITHUB_LOGIN_PATTERN.fullmatch(login) is None:
+            raise ConfigurationError("Некорректно задан GitHub login.")
+        if not emails:
+            raise ConfigurationError("Не задано ни одного авторского email.")
+        if any(_EMAIL_PATTERN.fullmatch(email) is None for email in emails):
+            raise ConfigurationError("Некорректно задан список авторских email.")
+        if any(any(character in repository for character in "\r\n\0") for repository in exclusions):
+            raise ConfigurationError("Некорректно задан список исключений.")
+
+        try:
+            ZoneInfo(timezone)
+        except (ValueError, ZoneInfoNotFoundError) as error:
+            raise ConfigurationError("Некорректно задан часовой пояс.") from error
+
+        object.__setattr__(self, "github_login", login)
+        object.__setattr__(self, "author_emails", emails)
+        object.__setattr__(self, "timezone", timezone)
+        object.__setattr__(self, "excluded_repositories", exclusions)
