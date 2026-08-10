@@ -13,6 +13,7 @@ def test_environment_provider_loads_required_and_optional_values() -> None:
             "IT_ACTIVITY_AUTHOR_EMAILS": "first@example.invalid, SECOND@example.invalid",
             "IT_ACTIVITY_TIMEZONE": "UTC",
             "IT_ACTIVITY_EXCLUDED_REPOSITORIES": "owner/one, owner/two",
+            "IT_ACTIVITY_EXPECTED_REPOSITORIES": "owner/one, owner/private-two",
         }
     )
 
@@ -23,6 +24,7 @@ def test_environment_provider_loads_required_and_optional_values() -> None:
     )
     assert configuration.timezone == "UTC"
     assert configuration.excluded_repositories == frozenset({"owner/one", "owner/two"})
+    assert configuration.expected_repositories == frozenset({"owner/one", "owner/private-two"})
 
 
 def test_environment_provider_uses_default_timezone() -> None:
@@ -30,6 +32,7 @@ def test_environment_provider_uses_default_timezone() -> None:
         {
             "IT_ACTIVITY_GITHUB_LOGIN": "octocat",
             "IT_ACTIVITY_AUTHOR_EMAILS": "owner@example.invalid",
+            "IT_ACTIVITY_EXPECTED_REPOSITORIES": "octocat/profile",
         }
     ).load()
 
@@ -38,12 +41,17 @@ def test_environment_provider_uses_default_timezone() -> None:
 
 @pytest.mark.parametrize(
     "missing_variable",
-    ["IT_ACTIVITY_GITHUB_LOGIN", "IT_ACTIVITY_AUTHOR_EMAILS"],
+    [
+        "IT_ACTIVITY_GITHUB_LOGIN",
+        "IT_ACTIVITY_AUTHOR_EMAILS",
+        "IT_ACTIVITY_EXPECTED_REPOSITORIES",
+    ],
 )
 def test_environment_provider_rejects_missing_required_value(missing_variable: str) -> None:
     environment = {
         "IT_ACTIVITY_GITHUB_LOGIN": "octocat",
         "IT_ACTIVITY_AUTHOR_EMAILS": "owner@example.invalid",
+        "IT_ACTIVITY_EXPECTED_REPOSITORIES": "octocat/profile",
     }
     del environment[missing_variable]
 

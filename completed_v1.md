@@ -100,3 +100,29 @@
 - публичный filesystem adapter пишет только восемь заранее определённых путей внутри корня репозитория и отклоняет символьные ссылки наружу.
 
 Артефакты: `README.md`, `generated/`, `src/it_activity/domain/profile.py`, `src/it_activity/application/generate_profile.py`, `src/it_activity/ports/rendering.py`, `src/it_activity/ports/output.py`, `src/it_activity/adapters/svg_renderer.py`, `src/it_activity/adapters/filesystem.py`, `src/it_activity/entrypoints/cli.py`, `tests/unit/adapters/test_svg_renderer.py`, `tests/unit/adapters/test_filesystem.py`, `tests/unit/application/test_generate_profile.py`.
+
+### 5. Автоматизировать обновление
+
+- [x] Добавить GitHub Actions workflow с ежедневным расписанием и ручным запуском.
+- [x] Использовать отдельный fine-grained PAT только для чтения нужных приватных репозиториев, храня его в GitHub Actions Secrets.
+- [x] Использовать штатный `GITHUB_TOKEN` только для записи обновлённых SVG и README в профильный репозиторий.
+- [x] Не сохранять приватные клоны в публичный cache или artifacts и не выводить приватные данные в логи.
+- [x] Коммитить только фактически изменившиеся сгенерированные файлы.
+
+Критерий готовности: запланированный и ручной запуск обновляют профиль, а отсутствие доступа хотя бы к одному ожидаемому репозиторию приводит к понятной ошибке без раскрытия его названия.
+
+Результат:
+
+- workflow запускается ежедневно в 00:17 UTC и вручную, сериализует обновления и ограничен записью repository contents;
+- официальный checkout использует штатный `GITHUB_TOKEN` профильного репозитория, а приложение получает отдельный fine-grained PAT из `IT_ACTIVITY_GITHUB_READ_TOKEN` только в шаге агрегации;
+- обязательный приватный allowlist `IT_ACTIVITY_EXPECTED_REPOSITORIES` проверяется до обхода истории; отсутствие любого ожидаемого репозитория блокирует публикацию безопасной общей ошибкой;
+- workflow не клонирует рабочие репозитории, не создаёт cache или artifacts и коммитит только фактически изменившиеся восемь публичных файлов;
+- статические workflow-тесты контролируют расписание, ручной запуск, разделение credentials, отсутствие cache/artifacts, полный SHA Actions и фиксированный набор публикуемых путей.
+
+Принятые ограничения:
+
+- владелец репозитория должен заранее создать Actions Secrets и variables, выдать read-only PAT доступ ко всем ожидаемым репозиториям и разрешить `GITHUB_TOKEN` запись contents;
+- новые доступные репозитории агрегируются автоматически, но их следует добавить в секрет ожидаемого набора, чтобы последующая потеря доступа обнаруживалась;
+- push не выполняется при неизменившемся публичном результате и не использует force.
+
+Артефакты: `.github/workflows/update-profile.yml`, `src/it_activity/domain/configuration.py`, `src/it_activity/adapters/environment.py`, `src/it_activity/application/collect_activity.py`, `src/it_activity/application/collect_usage.py`, `tests/architecture/test_update_workflow.py`, `tests/unit/application/test_collect_activity.py`, `tests/unit/application/test_collect_usage.py`, `docs/configuration.md`, `docs/automation.md`.

@@ -11,6 +11,10 @@
 - `IT_ACTIVITY_GITHUB_READ_TOKEN` — fine-grained PAT с доступом на чтение metadata
   и contents всех учитываемых публичных и приватных репозиториев. Переменная нужна
   только командам сбора и генерации.
+- `IT_ACTIVITY_EXPECTED_REPOSITORIES` — разделённые запятыми полные имена всех
+  репозиториев, доступ к которым обязателен. Значение считается приватным: если хотя
+  бы один репозиторий не виден read-only токену, публикация останавливается без
+  вывода имени или количества пропущенных репозиториев.
 
 Необязательные переменные:
 
@@ -23,8 +27,12 @@
 ```shell
 IT_ACTIVITY_GITHUB_LOGIN=octocat \
 IT_ACTIVITY_AUTHOR_EMAILS=owner@example.invalid \
+IT_ACTIVITY_EXPECTED_REPOSITORIES=octocat/octocat \
 .venv/bin/it-activity validate-config
 ```
 
 Токен передаётся процессу через окружение. Его нельзя добавлять в URL, аргументы
 команд, файлы конфигурации или вывод CI.
+
+Имена ожидаемых и исключённых приватных репозиториев, а также авторские email
+следует хранить в GitHub Actions Secrets, а не в repository variables.

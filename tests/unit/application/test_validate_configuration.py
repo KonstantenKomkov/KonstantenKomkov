@@ -11,6 +11,7 @@ class StubConfigurationProvider:
         return ProfileConfiguration(
             github_login="octocat",
             author_emails=frozenset({"first@example.invalid", "second@example.invalid"}),
+            expected_repositories=frozenset({"private-owner/private-project"}),
             excluded_repositories=frozenset({"private-owner/private-project"}),
         )
 

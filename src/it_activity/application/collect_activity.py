@@ -54,7 +54,10 @@ class CollectActivity:
             for offset in range(MAX_HISTORY_DAYS)
         }
 
-        repositories = self._validated_repositories(configuration.github_login)
+        repositories = self._validated_repositories(
+            configuration.github_login,
+            configuration.expected_repositories,
+        )
         excluded = {name.casefold() for name in configuration.excluded_repositories}
         seen_commits: dict[str, tuple[str, datetime]] = {}
 
@@ -96,7 +99,11 @@ class CollectActivity:
             days=tuple(daily[day] for day in sorted(daily)),
         )
 
-    def _validated_repositories(self, owner_login: str) -> tuple[RepositoryReference, ...]:
+    def _validated_repositories(
+        self,
+        owner_login: str,
+        expected_repositories: frozenset[str],
+    ) -> tuple[RepositoryReference, ...]:
         repositories = tuple(self._activity_source.list_repositories(owner_login))
         repository_ids: set[int] = set()
         full_names: set[str] = set()
@@ -106,6 +113,9 @@ class CollectActivity:
                 raise CollectionError("GitHub вернул повторяющийся репозиторий.")
             repository_ids.add(repository.repository_id)
             full_names.add(normalized_name)
+        expected = {repository.casefold() for repository in expected_repositories}
+        if not expected.issubset(full_names):
+            raise CollectionError("GitHub не предоставил доступ ко всем ожидаемым репозиториям.")
         return repositories
 
     def _source_line_counts(

@@ -26,6 +26,7 @@ def test_validate_config_prints_safe_json(
     monkeypatch.setenv("IT_ACTIVITY_GITHUB_LOGIN", "octocat")
     monkeypatch.setenv("IT_ACTIVITY_AUTHOR_EMAILS", "private-owner@example.invalid")
     monkeypatch.setenv("IT_ACTIVITY_EXCLUDED_REPOSITORIES", "private-owner/private-project")
+    monkeypatch.setenv("IT_ACTIVITY_EXPECTED_REPOSITORIES", "private-owner/private-project")
 
     exit_code = main(["validate-config"])
 

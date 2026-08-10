@@ -131,6 +131,14 @@ def test_collect_activity_matches_manual_public_private_aggregate() -> None:
         github_login="octocat",
         author_emails=frozenset({"OWNER@example.invalid"}),
         excluded_repositories=frozenset({"OCTOCAT/excluded-fixture"}),
+        expected_repositories=frozenset(
+            {
+                "octocat/public-fixture",
+                "fixture-org/private-fixture",
+                "octocat/fork-fixture",
+                "octocat/excluded-fixture",
+            }
+        ),
     )
 
     report = CollectActivity(
@@ -162,6 +170,31 @@ def test_collect_activity_matches_manual_public_private_aggregate() -> None:
     assert {sha for _, sha in source.change_calls} == {SHA_A, SHA_C, SHA_D}
 
 
+def test_collect_activity_rejects_missing_expected_access_without_private_data() -> None:
+    now = datetime(2026, 8, 10, 9, 0, tzinfo=timezone.utc)
+    repositories = (RepositoryReference(1, "fixture-org/visible-private", private=True),)
+    source = FakeActivitySource(repositories, {}, {})
+    configuration = ProfileConfiguration(
+        github_login="octocat",
+        author_emails=frozenset({"owner@example.invalid"}),
+        expected_repositories=frozenset(
+            {"fixture-org/visible-private", "fixture-org/missing-private"}
+        ),
+    )
+
+    with pytest.raises(CollectionError) as captured:
+        CollectActivity(
+            StaticConfigurationProvider(configuration), source, FixedClock(now)
+        ).execute()
+
+    message = str(captured.value)
+    assert "ожидаемым репозиториям" in message
+    assert "fixture-org" not in message
+    assert "visible-private" not in message
+    assert "missing-private" not in message
+    assert source.history_calls == []
+
+
 def test_collect_activity_rejects_conflicting_duplicate_sha_without_private_data() -> None:
     now = datetime(2026, 8, 10, 9, 0, tzinfo=timezone.utc)
     repositories = (
@@ -179,6 +212,9 @@ def test_collect_activity_rejects_conflicting_duplicate_sha_without_private_data
     configuration = ProfileConfiguration(
         github_login="octocat",
         author_emails=frozenset({"owner@example.invalid"}),
+        expected_repositories=frozenset(
+            {"fixture-org/first-private", "fixture-org/second-private"}
+        ),
     )
 
     with pytest.raises(CollectionError) as captured:
@@ -196,6 +232,7 @@ def test_collect_activity_requires_timezone_aware_clock() -> None:
     configuration = ProfileConfiguration(
         github_login="octocat",
         author_emails=frozenset({"owner@example.invalid"}),
+        expected_repositories=frozenset({"octocat/profile"}),
     )
     source = FakeActivitySource((), {}, {})
 

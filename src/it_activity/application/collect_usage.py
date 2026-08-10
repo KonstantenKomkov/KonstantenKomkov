@@ -29,7 +29,10 @@ class CollectUsage:
     def execute(self) -> UsageReport:
         """Return only allowlisted names, shares, and repository frequencies."""
         configuration = self._configuration_provider.load()
-        repositories = self._validated_repositories(configuration.github_login)
+        repositories = self._validated_repositories(
+            configuration.github_login,
+            configuration.expected_repositories,
+        )
         excluded = {name.casefold() for name in configuration.excluded_repositories}
         included = tuple(
             repository
@@ -71,6 +74,7 @@ class CollectUsage:
     def _validated_repositories(
         self,
         owner_login: str,
+        expected_repositories: frozenset[str],
     ) -> tuple[RepositoryReference, ...]:
         repositories = tuple(self._usage_source.list_repositories(owner_login))
         repository_ids: set[int] = set()
@@ -81,4 +85,9 @@ class CollectUsage:
                 raise UsageCollectionError("GitHub вернул повторяющийся репозиторий.")
             repository_ids.add(repository.repository_id)
             full_names.add(normalized_name)
+        expected = {repository.casefold() for repository in expected_repositories}
+        if not expected.issubset(full_names):
+            raise UsageCollectionError(
+                "GitHub не предоставил доступ ко всем ожидаемым репозиториям."
+            )
         return repositories

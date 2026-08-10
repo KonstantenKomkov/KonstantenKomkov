@@ -14,6 +14,7 @@ GITHUB_LOGIN_VARIABLE = "IT_ACTIVITY_GITHUB_LOGIN"
 AUTHOR_EMAILS_VARIABLE = "IT_ACTIVITY_AUTHOR_EMAILS"
 TIMEZONE_VARIABLE = "IT_ACTIVITY_TIMEZONE"
 EXCLUSIONS_VARIABLE = "IT_ACTIVITY_EXCLUDED_REPOSITORIES"
+EXPECTED_REPOSITORIES_VARIABLE = "IT_ACTIVITY_EXPECTED_REPOSITORIES"
 
 
 class EnvironmentConfigurationProvider:
@@ -28,12 +29,14 @@ class EnvironmentConfigurationProvider:
         author_emails = frozenset(self._split(self._required(AUTHOR_EMAILS_VARIABLE)))
         timezone = self._environ.get(TIMEZONE_VARIABLE, DEFAULT_TIMEZONE)
         exclusions = frozenset(self._split(self._environ.get(EXCLUSIONS_VARIABLE, "")))
+        expected = frozenset(self._split(self._required(EXPECTED_REPOSITORIES_VARIABLE)))
 
         return ProfileConfiguration(
             github_login=github_login,
             author_emails=author_emails,
             timezone=timezone,
             excluded_repositories=exclusions,
+            expected_repositories=expected,
         )
 
     def _required(self, variable: str) -> str:

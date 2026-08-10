@@ -2,7 +2,9 @@
 
 from collections.abc import Mapping, Sequence
 
-from it_activity.application.collect_usage import CollectUsage
+import pytest
+
+from it_activity.application.collect_usage import CollectUsage, UsageCollectionError
 from it_activity.domain.activity import RepositoryReference
 from it_activity.domain.configuration import ProfileConfiguration
 
@@ -69,6 +71,14 @@ def test_collect_usage_matches_manual_public_private_aggregate() -> None:
         github_login="octocat",
         author_emails=frozenset({"owner@example.invalid"}),
         excluded_repositories=frozenset({"OCTOCAT/excluded-fixture"}),
+        expected_repositories=frozenset(
+            {
+                "octocat/public-fixture",
+                "fixture-org/private-fixture",
+                "octocat/empty-fixture",
+                "octocat/excluded-fixture",
+            }
+        ),
     )
 
     report = CollectUsage(StaticConfigurationProvider(configuration), source).execute()
@@ -91,3 +101,26 @@ def test_collect_usage_matches_manual_public_private_aggregate() -> None:
     assert "Private Fixture Language" not in repr(report)
     assert "private-fixture" not in repr(report)
     assert "package.json" not in repr(report)
+
+
+def test_collect_usage_rejects_missing_expected_access_without_private_data() -> None:
+    repositories = (RepositoryReference(1, "fixture-org/visible-private", private=True),)
+    source = FakeUsageSource(repositories, {}, {})
+    configuration = ProfileConfiguration(
+        github_login="octocat",
+        author_emails=frozenset({"owner@example.invalid"}),
+        expected_repositories=frozenset(
+            {"fixture-org/visible-private", "fixture-org/missing-private"}
+        ),
+    )
+
+    with pytest.raises(UsageCollectionError) as captured:
+        CollectUsage(StaticConfigurationProvider(configuration), source).execute()
+
+    message = str(captured.value)
+    assert "ожидаемым репозиториям" in message
+    assert "fixture-org" not in message
+    assert "visible-private" not in message
+    assert "missing-private" not in message
+    assert source.language_calls == []
+    assert source.manifest_calls == []
