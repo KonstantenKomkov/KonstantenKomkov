@@ -34,6 +34,24 @@ PRIVATE_WEB_PATH = "web/private_component.ts"
 OTHER_PRIVATE_PATH = "src/ignored_other_author.py"
 
 
+def safe_git_failure_phase(returncode: int, stderr: str) -> str:
+    """Classify a Git failure without exposing its repository-specific details."""
+    normalized = stderr.casefold()
+    if "not a git repository" in normalized:
+        return "git-not-repository"
+    if "detected dubious ownership" in normalized:
+        return "git-dubious-ownership"
+    if "unknown option" in normalized or "unknown switch" in normalized:
+        return "git-unsupported-option"
+    if "bad config" in normalized or "config file" in normalized:
+        return "git-configuration"
+    if "must be run in a work tree" in normalized:
+        return "git-worktree"
+    if returncode == 128:
+        return "git-exit-128"
+    return "git-exit-other"
+
+
 def run_git(
     repository: Path,
     *arguments: str,
@@ -63,7 +81,8 @@ def run_git(
         check=False,
     )
     if result.returncode != 0:
-        raise AssertionError("Failed to prepare the local Git fixture.")
+        phase = safe_git_failure_phase(result.returncode, result.stderr)
+        raise AssertionError(f"SAFE_PHASE:{phase}")
     return result.stdout
 
 
