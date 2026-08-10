@@ -169,6 +169,8 @@ class LocalGitSource:
                 "--format=%(refname)",
                 "refs/heads",
             ).splitlines()
+        except AssertionError:
+            raise
         except Exception as error:
             raise AssertionError("SAFE_PHASE:git-refs") from error
         for ref in refs:
@@ -181,6 +183,8 @@ class LocalGitSource:
                     f"--until={until.isoformat()}",
                     "--format=%H%x09%aI%x09%ae",
                 )
+            except AssertionError:
+                raise
             except Exception as error:
                 raise AssertionError("SAFE_PHASE:git-log") from error
             for line in log.splitlines():
@@ -209,6 +213,8 @@ class LocalGitSource:
                 commit_sha,
                 "--",
             )
+        except AssertionError:
+            raise
         except Exception as error:
             raise AssertionError("SAFE_PHASE:git-show") from error
         changes: list[FileChange] = []
