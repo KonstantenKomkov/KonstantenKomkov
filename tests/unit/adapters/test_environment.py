@@ -14,6 +14,9 @@ def test_environment_provider_loads_required_and_optional_values() -> None:
             "IT_ACTIVITY_TIMEZONE": "UTC",
             "IT_ACTIVITY_EXCLUDED_REPOSITORIES": "owner/one, owner/two",
             "IT_ACTIVITY_EXPECTED_REPOSITORIES": "owner/one, owner/private-two",
+            "IT_ACTIVITY_ADDITIONAL_EXPECTED_REPOSITORIES": (
+                "another-owner/private-three, owner/one"
+            ),
         }
     )
 
@@ -24,7 +27,9 @@ def test_environment_provider_loads_required_and_optional_values() -> None:
     )
     assert configuration.timezone == "UTC"
     assert configuration.excluded_repositories == frozenset({"owner/one", "owner/two"})
-    assert configuration.expected_repositories == frozenset({"owner/one", "owner/private-two"})
+    assert configuration.expected_repositories == frozenset(
+        {"owner/one", "owner/private-two", "another-owner/private-three"}
+    )
 
 
 def test_environment_provider_uses_default_timezone() -> None:
