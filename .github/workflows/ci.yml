@@ -68,7 +68,7 @@ jobs:
           fi
 
           phase="fixture-or-unclassified"
-          for allowed_phase in git-not-repository git-dubious-ownership git-unsupported-option git-configuration git-worktree git-exit-128 git-exit-other repository-fixture configuration git-refs git-log commit-metadata git-show file-change activity-execute commit-count added-lines deleted-lines first-day last-day last-day-count; do
+          for allowed_phase in git-not-repository git-dubious-ownership git-unsupported-option git-configuration git-worktree git-exit-128 git-exit-other git-refs-os git-refs-unicode git-refs-value git-refs-subprocess git-refs-runtime git-refs-other repository-fixture configuration git-log commit-metadata git-show file-change activity-execute commit-count added-lines deleted-lines first-day last-day last-day-count; do
             if [[ "$test_output" == *"SAFE_PHASE:$allowed_phase"* ]]; then
               phase="$allowed_phase"
               break

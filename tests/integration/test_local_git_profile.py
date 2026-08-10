@@ -52,6 +52,21 @@ def safe_git_failure_phase(returncode: int, stderr: str) -> str:
     return "git-exit-other"
 
 
+def safe_exception_kind(error: Exception) -> str:
+    """Reduce an exception type to an allowlisted diagnostic category."""
+    if isinstance(error, OSError):
+        return "os"
+    if isinstance(error, UnicodeError):
+        return "unicode"
+    if isinstance(error, ValueError):
+        return "value"
+    if isinstance(error, subprocess.SubprocessError):
+        return "subprocess"
+    if isinstance(error, RuntimeError):
+        return "runtime"
+    return "other"
+
+
 def run_git(
     repository: Path,
     *arguments: str,
@@ -172,7 +187,8 @@ class LocalGitSource:
         except AssertionError:
             raise
         except Exception as error:
-            raise AssertionError("SAFE_PHASE:git-refs") from error
+            kind = safe_exception_kind(error)
+            raise AssertionError(f"SAFE_PHASE:git-refs-{kind}") from error
         for ref in refs:
             try:
                 log = run_git(
