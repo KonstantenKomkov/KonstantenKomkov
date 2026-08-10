@@ -96,7 +96,7 @@ def test_security_workflows_fail_closed_without_public_finding_artifacts() -> No
         "make test PYTEST_ARGS=tests/unit",
         "make dependency-check",
     ):
-        assert f"run: {command}" in ci
+        assert command in ci
     assert "requirements-audit.lock" in ci
     assert "python -m pip_audit --strict --no-deps --disable-pip" in ci
     assert "requirements-dev.lock" in ci

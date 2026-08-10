@@ -57,7 +57,25 @@ jobs:
         run: make test PYTEST_ARGS=tests/architecture
 
       - name: Run activity integration test
-        run: make test PYTEST_ARGS="tests/integration -k local_git_activity"
+        shell: bash
+        run: |
+          set +e
+          test_output="$(make test PYTEST_ARGS="tests/integration -k local_git_activity" 2>&1)"
+          test_status=$?
+          set -e
+          if [[ "$test_status" -eq 0 ]]; then
+            exit 0
+          fi
+
+          phase="fixture-or-unclassified"
+          for allowed_phase in commit-count added-lines deleted-lines first-day last-day last-day-count; do
+            if [[ "$test_output" == *"SAFE_PHASE:$allowed_phase"* ]]; then
+              phase="$allowed_phase"
+              break
+            fi
+          done
+          echo "::error title=Sanitized activity integration failure::$phase"
+          exit "$test_status"
 
       - name: Run usage integration test
         run: make test PYTEST_ARGS="tests/integration -k local_git_usage"

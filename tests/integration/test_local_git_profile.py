@@ -301,12 +301,14 @@ def local_profile_fixture(tmp_path: Path) -> LocalProfileFixture:
 def test_local_git_activity_aggregation(local_profile_fixture: LocalProfileFixture) -> None:
     activity = local_profile_fixture.activity_provider.execute()
 
-    assert activity.totals(365).commits == 2
-    assert activity.totals(365).added_lines == 5
-    assert activity.totals(365).deleted_lines == 1
-    assert next(day for day in activity.days if day.day.isoformat() == "2026-08-08").commits == 1
-    assert activity.days[-1].day.isoformat() == "2026-08-10"
-    assert activity.days[-1].commits == 1
+    assert activity.totals(365).commits == 2, "SAFE_PHASE:commit-count"
+    assert activity.totals(365).added_lines == 5, "SAFE_PHASE:added-lines"
+    assert activity.totals(365).deleted_lines == 1, "SAFE_PHASE:deleted-lines"
+    assert next(day for day in activity.days if day.day.isoformat() == "2026-08-08").commits == 1, (
+        "SAFE_PHASE:first-day"
+    )
+    assert activity.days[-1].day.isoformat() == "2026-08-10", "SAFE_PHASE:last-day"
+    assert activity.days[-1].commits == 1, "SAFE_PHASE:last-day-count"
 
 
 def test_local_git_usage_aggregation(local_profile_fixture: LocalProfileFixture) -> None:
