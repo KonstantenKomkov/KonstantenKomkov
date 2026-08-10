@@ -61,6 +61,41 @@ def test_all_svg_artifacts_are_well_formed_responsive_and_theme_aware() -> None:
         assert "javascript:" not in content.casefold()
 
 
+def test_daily_charts_show_numeric_per_day_scales() -> None:
+    artifacts = SvgProfileRenderer().render(sample_activity_report(), sample_usage_report())
+    commits_svg = artifacts["generated/commits-30.svg"]
+    lines_svg = artifacts["generated/lines-30.svg"]
+
+    assert "коммитов/день" in commits_svg
+    assert "строк/день" in lines_svg
+    assert "добавлено +" in lines_svg
+    assert "удалено \N{MINUS SIGN}" in lines_svg
+    for value in ("0", "1", "2", "3", "4"):
+        assert f'text-anchor="end">{value}</text>' in commits_svg
+    for value in ("0", "10", "20", "30", "40"):
+        assert f'text-anchor="end">{value}</text>' in lines_svg
+
+
+def test_usage_rows_embed_branded_and_generic_icons_without_external_assets() -> None:
+    renderer = SvgProfileRenderer()
+    activity = sample_activity_report()
+    usage_svg = renderer.render(activity, sample_usage_report())[USAGE_SVG_PATH]
+    fallback_svg = renderer.render(
+        activity,
+        build_usage_report(
+            {"1C Enterprise": 1},
+            {"Ansible": 1},
+            repository_count=1,
+        ),
+    )[USAGE_SVG_PATH]
+
+    for icon in ("python", "typescript", "nodedotjs", "docker", "generic-language"):
+        assert f'data-icon="{icon}"' in usage_svg
+    assert 'data-icon="generic-technology"' in fallback_svg
+    assert "<image" not in usage_svg.casefold()
+    assert "href=" not in usage_svg.casefold()
+
+
 def test_readme_uses_supported_details_and_opens_only_thirty_days() -> None:
     readme = SvgProfileRenderer().render(sample_activity_report(), sample_usage_report())[
         README_PATH
@@ -80,7 +115,7 @@ def test_readme_uses_supported_details_and_opens_only_thirty_days() -> None:
     assert "javascript:" not in readme.casefold()
 
 
-def test_zero_line_chart_displays_zero_maximum() -> None:
+def test_zero_line_chart_displays_zero_scale() -> None:
     final_day = date(2026, 8, 10)
     activity = ActivityReport(
         timezone="Europe/Moscow",
@@ -94,8 +129,9 @@ def test_zero_line_chart_displays_zero_maximum() -> None:
         UsageReport(languages=(), technologies=()),
     )["generated/lines-30.svg"]
 
-    assert "макс. 0" in lines_svg
-    assert "макс. 1" not in lines_svg
+    assert "строк/день" in lines_svg
+    assert 'font-size="10" x="46" y="213.5" text-anchor="end">0</text>' in lines_svg
+    assert 'text-anchor="end">1</text>' not in lines_svg
 
 
 def test_rendered_output_contains_no_private_fixture_values() -> None:
@@ -122,22 +158,22 @@ def test_svg_snapshots_have_expected_hashes() -> None:
     assert hashes == {
         "README.md": "d47409a7afb7f379546aa2f0b629eccbb24b19554e4bdf41867f503a300700c0",
         "generated/commits-30.svg": (
-            "007ee8a4587ba1fc372295b594f9d6d39e8ab3f6451c02513041967a22e882a3"
+            "b59ec6b2297e5eb2f1ac226d73dd92a39bd648c73e34690bbee29d494001b0b3"
         ),
         "generated/commits-365.svg": (
-            "484e37df9d9b09ae5f28239a313e903a6fa6f0ce64cc3e7f2583c9b6ee4736de"
+            "f6e872089d15a6116d9099ffeda15c9d9bea308931012c4553208778c5f0d3e0"
         ),
         "generated/commits-7.svg": (
-            "510d82ba105dee55cb2946f2018c317843de5cb96b588f448fbea1b5c9823c1b"
+            "083fcb1488ccee355b4256777ad965c7f16ee106f465ddd3ea537590554da9ff"
         ),
         "generated/lines-30.svg": (
-            "31d8b33aa905b0d63c220dd331b4a15a1f9ff42ceff2084b6ddf050e0b072033"
+            "a26b5ed2086f3284bfe4a64f163efe03fcc8074c72218f3186ea80abac186bf4"
         ),
         "generated/lines-365.svg": (
-            "18d1a2ed54ea35fc79fe45a2b98fb788c9b2fc2777c11a96e5e1de4064fddfb3"
+            "505d7e5ef6ecccd0b128c0496ebf60f38bfcbf0222324c51d20b1bbc376068c5"
         ),
         "generated/lines-7.svg": (
-            "0696f0600a4d62c69c3109b225d8f32e55a326cab4818e744e93d6e50e6e3bc8"
+            "422ad7e750d81139af299e5749004b4e84452d72cb8de96734257b739687c368"
         ),
-        "generated/usage.svg": "883512a094da3ad745c3c0fdd21558d9fa82928fede7f7c3c007d30e93eab61e",
+        "generated/usage.svg": "4dc3bb83f388b00159093c20fdd821714da75fbf791302256eb0a08e02bba045",
     }

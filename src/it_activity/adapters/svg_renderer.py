@@ -3,6 +3,7 @@
 from collections.abc import Mapping, Sequence
 from html import escape
 
+from it_activity.adapters.usage_icons import UsageIcon, language_icon, technology_icon
 from it_activity.domain.activity import ActivityDataError, ActivityReport, DailyActivity
 from it_activity.domain.profile import (
     DEFAULT_OPEN_PERIOD,
@@ -101,10 +102,9 @@ class SvgProfileRenderer:
                 ),
                 (
                     f'<text class="label muted" x="{self._number(CHART_RIGHT)}" y="80" '
-                    f'text-anchor="end">макс. {maximum}</text>'
+                    'text-anchor="end">коммитов/день</text>'
                 ),
-                self._grid_line(CHART_TOP),
-                self._grid_line(CHART_BOTTOM),
+                *self._y_axis(maximum),
             ]
         )
         for index, day in enumerate(days):
@@ -140,19 +140,18 @@ class SvgProfileRenderer:
             [
                 '<text class="title" x="28" y="38">Строки кода</text>',
                 (
-                    f'<text class="metric added-text" x="28" y="64">+'
+                    f'<text class="metric added-text" x="28" y="64">добавлено +'
                     f"{escape(self._format_count(added_total))}</text>"
                 ),
                 (
-                    f'<text class="metric deleted-text" x="150" y="64">−'
+                    f'<text class="metric deleted-text" x="210" y="64">удалено −'
                     f"{escape(self._format_count(deleted_total))}</text>"
                 ),
                 (
                     f'<text class="label muted" x="{self._number(CHART_RIGHT)}" y="80" '
-                    f'text-anchor="end">макс. {maximum}</text>'
+                    'text-anchor="end">строк/день</text>'
                 ),
-                self._grid_line(CHART_TOP),
-                self._grid_line(CHART_BOTTOM),
+                *self._y_axis(maximum),
                 (
                     f'<polyline class="added-line" points="{added_points}" '
                     'stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" '
@@ -200,13 +199,19 @@ class SvgProfileRenderer:
         elements: list[str] = []
         for index, language in enumerate(languages):
             y = 104 + index * 34
-            label = self._short_label(language.name)
+            label = self._short_label(language.name, maximum=22)
             bar_width = 320 * language.share_basis_points / 10_000
             elements.extend(
                 [
+                    self._usage_icon(
+                        language_icon(language.name),
+                        fallback_kind="language",
+                        x=28,
+                        y=y - 14,
+                    ),
                     (
                         f"<g><title>{escape(language.name)}</title>"
-                        f'<text class="label" x="28" y="{y}">{escape(label)}</text>'
+                        f'<text class="label" x="54" y="{y}">{escape(label)}</text>'
                         f'<text class="label muted" x="348" y="{y}" text-anchor="end">'
                         f"{self._format_percentage(language.share_basis_points)}</text></g>"
                     ),
@@ -225,7 +230,7 @@ class SvgProfileRenderer:
         elements: list[str] = []
         for index, technology in enumerate(technologies):
             y = 104 + index * 34
-            label = self._short_label(technology.name)
+            label = self._short_label(technology.name, maximum=22)
             bar_width = 310 * technology.repository_share_basis_points / 10_000
             frequency = (
                 f"{technology.repository_count} · "
@@ -233,9 +238,15 @@ class SvgProfileRenderer:
             )
             elements.extend(
                 [
+                    self._usage_icon(
+                        technology_icon(technology.name),
+                        fallback_kind="technology",
+                        x=382,
+                        y=y - 14,
+                    ),
                     (
                         f"<g><title>{escape(technology.name)}</title>"
-                        f'<text class="label" x="382" y="{y}">{escape(label)}</text>'
+                        f'<text class="label" x="408" y="{y}">{escape(label)}</text>'
                         f'<text class="label muted" x="692" y="{y}" text-anchor="end">'
                         f"{escape(frequency)}</text></g>"
                     ),
@@ -323,6 +334,74 @@ class SvgProfileRenderer:
             f'y1="{SvgProfileRenderer._number(y)}" '
             f'x2="{SvgProfileRenderer._number(CHART_RIGHT)}" '
             f'y2="{SvgProfileRenderer._number(y)}" />'
+        )
+
+    @staticmethod
+    def _y_axis(maximum: int) -> list[str]:
+        scale_maximum = max(maximum, 1)
+        values = {0, maximum}
+        if maximum > 0:
+            values.update((maximum * numerator + 2) // 4 for numerator in (1, 2, 3))
+
+        elements = []
+        if maximum == 0:
+            elements.append(SvgProfileRenderer._grid_line(CHART_TOP))
+        for value in sorted(values, reverse=True):
+            y = CHART_BOTTOM - value / scale_maximum * (CHART_BOTTOM - CHART_TOP)
+            elements.extend(
+                [
+                    SvgProfileRenderer._grid_line(y),
+                    (
+                        '<text class="muted" font-size="10" x="46" '
+                        f'y="{SvgProfileRenderer._number(y + 3.5)}" text-anchor="end">'
+                        f"{SvgProfileRenderer._format_count(value)}</text>"
+                    ),
+                ]
+            )
+        return elements
+
+    @staticmethod
+    def _usage_icon(
+        icon: UsageIcon | None,
+        fallback_kind: str,
+        x: int,
+        y: int,
+    ) -> str:
+        if icon is None:
+            background = "#8250DF" if fallback_kind == "language" else "#0969DA"
+            key = f"generic-{fallback_kind}"
+            if fallback_kind == "language":
+                content = (
+                    f'<path d="M{x + 6} {y + 5}l-3 4 3 4M{x + 12} {y + 5}l3 4-3 4'
+                    f'M{x + 10} {y + 4}L{x + 8} {y + 14}" fill="none" stroke="#FFFFFF" '
+                    'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />'
+                )
+            else:
+                content = (
+                    f'<path d="M{x + 4} {y + 4}h4v4h-4zM{x + 10} {y + 4}h4v4h-4z'
+                    f'M{x + 4} {y + 10}h4v4h-4zM{x + 10} {y + 10}h4v4h-4z" '
+                    'fill="#FFFFFF" />'
+                )
+        else:
+            background = icon.background
+            key = icon.key
+            if icon.path is not None:
+                content = (
+                    f'<path d="{escape(icon.path, quote=True)}" '
+                    f'fill="{escape(icon.foreground, quote=True)}" '
+                    f'transform="translate({x + 3} {y + 3}) scale(0.5)" />'
+                )
+            else:
+                content = (
+                    f'<text x="{x + 9}" y="{y + 12}" text-anchor="middle" font-size="8" '
+                    f'font-weight="700" style="fill:{icon.foreground}">'
+                    f"{escape(icon.glyph or '?')}</text>"
+                )
+        return (
+            f'<g aria-hidden="true" data-icon="{escape(key, quote=True)}">'
+            f'<rect x="{x}" y="{y}" width="18" height="18" rx="4" '
+            f'fill="{escape(background, quote=True)}" />'
+            f"{content}</g>"
         )
 
     @staticmethod
