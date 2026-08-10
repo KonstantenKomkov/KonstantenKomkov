@@ -211,6 +211,60 @@ def test_iter_commits_fetches_every_branch_and_page_without_messages() -> None:
     assert "owner@example.invalid" not in repr(commits)
 
 
+def test_iter_commits_treats_explicit_empty_repository_conflict_as_zero() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    since = datetime(2026, 8, 1, tzinfo=timezone.utc)
+    until = datetime(2026, 8, 10, tzinfo=timezone.utc)
+    source = GitHubRestActivitySource(
+        StubHttpClient(
+            {
+                url(
+                    "/repos/fixture-org/private-fixture/branches",
+                    page="1",
+                    per_page="2",
+                ): response({"message": "Git Repository is empty."}, status=409)
+            }
+        ),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    commits = tuple(source.iter_commits(repository, since, until))
+
+    assert commits == ()
+
+
+def test_later_empty_conflict_blocks_partial_branch_pagination() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    since = datetime(2026, 8, 1, tzinfo=timezone.utc)
+    until = datetime(2026, 8, 10, tzinfo=timezone.utc)
+    source = GitHubRestActivitySource(
+        StubHttpClient(
+            {
+                url(
+                    "/repos/fixture-org/private-fixture/branches",
+                    page="1",
+                    per_page="2",
+                ): response([{"name": "main"}, {"name": "feature/private"}]),
+                url(
+                    "/repos/fixture-org/private-fixture/branches",
+                    page="2",
+                    per_page="2",
+                ): response({"message": "Git Repository is empty."}, status=409),
+            }
+        ),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    with pytest.raises(GitHubApiError, match="Git-репозиторий пуст") as captured:
+        tuple(source.iter_commits(repository, since, until))
+
+    assert "private-fixture" not in str(captured.value)
+
+
 def test_get_file_changes_follows_link_header_and_accepts_file_counts() -> None:
     repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
     commit_path = f"/repos/fixture-org/private-fixture/commits/{SHA_A}"
@@ -282,9 +336,36 @@ def test_github_error_redacts_repository_sha_url_and_credential() -> None:
 
     message = str(captured.value)
     assert "HTTP 404" in message
+    assert "commit-files" in message
     assert "private-fixture" not in message
     assert SHA_A not in message
     assert "fixture-credential" not in message
+
+
+def test_unknown_conflict_still_blocks_without_response_details() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    request_url = url(
+        f"/repos/fixture-org/private-fixture/commits/{SHA_A}",
+        page="1",
+        per_page="2",
+    )
+    source = GitHubRestActivitySource(
+        StubHttpClient(
+            {request_url: response({"message": "private unavailable detail"}, status=409)}
+        ),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    with pytest.raises(GitHubApiError, match="HTTP 409") as captured:
+        source.get_file_changes(repository, SHA_A)
+
+    message = str(captured.value)
+    assert "commit-files" in message
+    assert "private unavailable detail" not in message
+    assert "private-fixture" not in message
+    assert SHA_A not in message
 
 
 def test_github_rejects_credential_for_another_account() -> None:
@@ -507,6 +588,58 @@ def test_get_language_bytes_returns_linguist_counts_without_repository_details()
 
     assert languages == {"Python": 120, "Private Fixture Language": 30}
     assert "private-fixture" not in repr(languages)
+
+
+def test_usage_treats_confirmed_empty_repository_conflicts_as_zero() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    since = datetime(2026, 8, 1, tzinfo=timezone.utc)
+    until = datetime(2026, 8, 10, tzinfo=timezone.utc)
+    source = GitHubRestActivitySource(
+        StubHttpClient(
+            {
+                url(
+                    "/repos/fixture-org/private-fixture/branches",
+                    page="1",
+                    per_page="2",
+                ): response({"message": "Git Repository is empty."}, status=409),
+                url("/repos/fixture-org/private-fixture/languages"): response(
+                    {"message": "Git Repository is empty."}, status=409
+                ),
+                url(
+                    "/repos/fixture-org/private-fixture/git/trees/main",
+                    recursive="1",
+                ): response({"message": "Git Repository is empty."}, status=409),
+            }
+        ),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    assert tuple(source.iter_commits(repository, since, until)) == ()
+    assert source.get_language_bytes(repository) == {}
+    assert source.list_manifest_markers(repository) == ()
+
+
+def test_usage_rejects_unconfirmed_empty_repository_conflict() -> None:
+    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
+    source = GitHubRestActivitySource(
+        StubHttpClient(
+            {
+                url("/repos/fixture-org/private-fixture/languages"): response(
+                    {"message": "Git Repository is empty."}, status=409
+                )
+            }
+        ),
+        "fixture-credential",
+        api_url=API_URL,
+        page_size=2,
+    )
+
+    with pytest.raises(GitHubApiError, match="Git-репозиторий пуст") as captured:
+        source.get_language_bytes(repository)
+
+    assert "private-fixture" not in str(captured.value)
 
 
 def test_manifest_tree_returns_only_allowlisted_markers() -> None:

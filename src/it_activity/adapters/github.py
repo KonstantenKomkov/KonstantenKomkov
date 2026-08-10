@@ -23,10 +23,15 @@ DEFAULT_PAGE_SIZE = 100
 MAX_PAGES = 10_000
 MAX_COMMIT_FILES = 3_000
 MAX_TREE_REQUESTS = 100_000
+EMPTY_REPOSITORY_MESSAGE = "Git Repository is empty."
 
 
 class GitHubApiError(ActivitySourceError):
     """A redacted GitHub API failure."""
+
+
+class _EmptyGitRepositoryError(GitHubApiError):
+    """GitHub explicitly reported a repository without a Git database."""
 
 
 class GitHubRestActivitySource:
@@ -61,6 +66,7 @@ class GitHubRestActivitySource:
         self._api_origin = (parsed_api_url.scheme, parsed_api_url.netloc)
         self._page_size = page_size
         self._repository_cache: dict[str, tuple[RepositoryReference, ...]] = {}
+        self._confirmed_empty_repository_ids: set[int] = set()
 
     def list_repositories(self, owner_login: str) -> Sequence[RepositoryReference]:
         """Return all repositories explicitly readable by the authenticated user."""
@@ -104,7 +110,12 @@ class GitHubRestActivitySource:
     def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
         """Return byte counts calculated by GitHub Linguist for the default branch."""
         repository_path = quote(repository.full_name, safe="/")
-        value = self._as_object(self._get_json(f"/repos/{repository_path}/languages"))
+        try:
+            value = self._as_object(self._get_json(f"/repos/{repository_path}/languages"))
+        except _EmptyGitRepositoryError:
+            if repository.repository_id not in self._confirmed_empty_repository_ids:
+                raise
+            return {}
         language_bytes: dict[str, int] = {}
         for language, byte_count in value.items():
             if (
@@ -122,7 +133,12 @@ class GitHubRestActivitySource:
         """Traverse the default tree and return no private paths, only allowlisted markers."""
         repository_path = quote(repository.full_name, safe="/")
         default_ref = repository.default_branch
-        recursive_tree = self._get_tree(repository_path, default_ref, recursive=True)
+        try:
+            recursive_tree = self._get_tree(repository_path, default_ref, recursive=True)
+        except _EmptyGitRepositoryError:
+            if repository.repository_id not in self._confirmed_empty_repository_ids:
+                raise
+            return ()
         if not self._required_boolean(recursive_tree, "truncated"):
             recursive_markers, _ = self._tree_markers_and_subtrees(recursive_tree)
             return tuple(sorted(recursive_markers))
@@ -164,7 +180,14 @@ class GitHubRestActivitySource:
             raise GitHubApiError("Некорректно задан период истории GitHub.")
 
         repository_path = quote(repository.full_name, safe="/")
-        branch_values = self._get_paginated_array(f"/repos/{repository_path}/branches", {})
+        branch_values = self._get_paginated_array(
+            f"/repos/{repository_path}/branches",
+            {},
+            empty_first_page_is_empty=True,
+        )
+        if not branch_values:
+            self._confirmed_empty_repository_ids.add(repository.repository_id)
+            return
         branch_names: set[str] = set()
         for branch_value in branch_values:
             branch = self._as_object(branch_value)
@@ -246,11 +269,17 @@ class GitHubRestActivitySource:
         self,
         path: str,
         parameters: Mapping[str, str],
+        empty_first_page_is_empty: bool = False,
     ) -> tuple[object, ...]:
         values: list[object] = []
         seen_pages: set[bytes] = set()
         for page in range(1, MAX_PAGES + 1):
-            value, page_digest, _ = self._get_json_page(path, parameters, page)
+            try:
+                value, page_digest, _ = self._get_json_page(path, parameters, page)
+            except _EmptyGitRepositoryError:
+                if empty_first_page_is_empty and page == 1:
+                    return ()
+                raise
             if page_digest in seen_pages:
                 raise GitHubApiError("GitHub повторил страницу пагинации.")
             seen_pages.add(page_digest)
@@ -315,13 +344,50 @@ class GitHubRestActivitySource:
             response = self._http_client.get(url, self._headers())
         except HttpTransportError:
             raise GitHubApiError("Не удалось получить полный ответ GitHub API.") from None
+        if response.status == 409 and self._reports_empty_repository(response.body):
+            raise _EmptyGitRepositoryError("GitHub сообщил, что Git-репозиторий пуст.")
         if response.status != 200:
-            raise GitHubApiError(f"GitHub API вернул ошибку HTTP {response.status}.")
+            operation = self._safe_operation(path)
+            raise GitHubApiError(
+                f"GitHub API вернул ошибку HTTP {response.status} (этап: {operation})."
+            )
         try:
             value: object = json.loads(response.body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
             raise GitHubApiError("GitHub API вернул некорректный JSON.") from None
         return value, hashlib.sha256(response.body).digest(), response.headers
+
+    @staticmethod
+    def _reports_empty_repository(body: bytes) -> bool:
+        """Recognize only GitHub's public empty-repository message without exposing it."""
+        try:
+            value: object = json.loads(body.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return False
+        return (
+            isinstance(value, dict)
+            and value.get("message") == EMPTY_REPOSITORY_MESSAGE
+            and all(isinstance(key, str) for key in value)
+        )
+
+    @staticmethod
+    def _safe_operation(path: str) -> str:
+        """Return a public allowlisted operation label without repository details."""
+        if path == "/user":
+            return "account"
+        if path == "/user/repos":
+            return "repositories"
+        if path.endswith("/branches"):
+            return "branches"
+        if path.endswith("/commits"):
+            return "commits"
+        if "/commits/" in path:
+            return "commit-files"
+        if path.endswith("/languages"):
+            return "languages"
+        if "/git/trees/" in path:
+            return "tree"
+        return "request"
 
     def _has_next_page(self, headers: Mapping[str, str]) -> bool:
         """Use GitHub's documented Link header as the file-completeness signal."""
