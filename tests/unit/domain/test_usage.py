@@ -71,6 +71,21 @@ def test_language_basis_points_use_deterministic_largest_remainder() -> None:
     assert sum(item.share_basis_points for item in report.languages) == 10_000
 
 
+def test_tiny_positive_language_share_remains_visible() -> None:
+    report = build_usage_report(
+        {"Go": 1, "Python": 1_000_000_000, "Rust": 1},
+        {},
+        repository_count=1,
+    )
+
+    assert [(item.name, item.share_basis_points) for item in report.languages] == [
+        ("Python", 9998),
+        ("Go", 1),
+        ("Rust", 1),
+    ]
+    assert sum(item.share_basis_points for item in report.languages) == 10_000
+
+
 def test_full_pinned_linguist_allowlist_keeps_rare_public_language_name() -> None:
     report = build_usage_report(
         {"1C Enterprise": 10},

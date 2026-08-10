@@ -231,9 +231,23 @@ def _allocate_basis_points(weights: Mapping[str, int]) -> Mapping[str, int]:
     total = sum(weights.values())
     if total == 0:
         return {}
+    if len(weights) > BASIS_POINTS:
+        raise UsageDataError("Слишком много языков для отображения долей.")
     shares = {name: weight * BASIS_POINTS // total for name, weight in weights.items()}
     remainders = {name: weight * BASIS_POINTS % total for name, weight in weights.items()}
     remaining = BASIS_POINTS - sum(shares.values())
     for name in sorted(remainders, key=lambda item: (-remainders[item], item))[:remaining]:
         shares[name] += 1
+
+    # A positive byte count must remain visible even when its exact share is
+    # below one basis point. Transfer points from the largest displayed shares
+    # only after the regular largest-remainder allocation, so ordinary rounding
+    # results remain unchanged.
+    for name in sorted(item for item, share in shares.items() if share == 0):
+        donor = min(
+            (item for item, share in shares.items() if share > 1),
+            key=lambda item: (-shares[item], -weights[item], item),
+        )
+        shares[donor] -= 1
+        shares[name] = 1
     return shares
