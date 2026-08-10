@@ -14,6 +14,8 @@ make check
 `make check` запускает Ruff formatter, Ruff linter, строгий mypy, все unit-,
 integration- и snapshot-тесты, затем `pip check`. Integration-тест создаёт только
 временный локальный Git-репозиторий и не использует сеть или реальные credentials.
+Единственная runtime-зависимость `tzdata` закреплена в `pyproject.toml` и dev lock,
+чтобы валидация IANA timezone не зависела от базы данных операционной системы.
 
 ## CI
 

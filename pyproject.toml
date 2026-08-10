@@ -7,7 +7,7 @@ name = "it-activity"
 version = "0.1.0"
 description = "Aggregate private-safe GitHub profile activity"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["tzdata==2026.3"]
 
 [project.scripts]
 it-activity = "it_activity.entrypoints.cli:main"

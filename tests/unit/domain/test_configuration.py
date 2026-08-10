@@ -1,8 +1,28 @@
 """Tests for validated profile configuration."""
 
+from zoneinfo import TZPATH, ZoneInfo, reset_tzpath
+
 import pytest
 
 from it_activity.domain.configuration import ConfigurationError, ProfileConfiguration
+
+
+def test_configuration_uses_packaged_timezone_database() -> None:
+    """Keep IANA timezone validation independent from host operating-system data."""
+    ZoneInfo.clear_cache()
+    reset_tzpath(())
+    try:
+        configuration = ProfileConfiguration(
+            github_login="octocat",
+            author_emails=frozenset({"owner@example.invalid"}),
+            expected_repositories=frozenset({"octocat/profile"}),
+            timezone="Europe/Moscow",
+        )
+    finally:
+        reset_tzpath(TZPATH)
+        ZoneInfo.clear_cache()
+
+    assert configuration.timezone == "Europe/Moscow"
 
 
 def test_configuration_normalizes_private_identifiers() -> None:

@@ -20,7 +20,8 @@
 
 - Python 3.10 или новее; минимум повышен в задаче 6 для установки исправленных
   версий build- и test-инструментов без известных high-severity уязвимостей;
-- runtime-зависимости отсутствуют;
+- единственная runtime-зависимость `tzdata` закреплена и обеспечивает IANA timezone
+  database даже в Python-окружениях без системных zoneinfo-файлов;
 - конфигурация читается только из окружения, приватные значения не выводятся.
 
 Артефакты: `src/it_activity/`, `tests/`, `pyproject.toml`, `requirements-dev.lock`, `Makefile`, `docs/configuration.md`.
@@ -143,7 +144,7 @@
 
 - unit-тесты контролируют календарные границы, timezone, авторов, глобальную SHA-дедупликацию, file exclusions, line counts, языки, технологии и рендеринг;
 - end-to-end integration-тест создаёт временный локальный Git-репозиторий с несколькими ветками, повторным SHA и приватными metadata, затем проверяет агрегаты и полный публичный вывод;
-- CI запускает Ruff formatter/linter, строгий mypy, 90 тестов и `pip check` на Python 3.10 и 3.14;
+- CI запускает Ruff formatter/linter, строгий mypy, 91 тест и `pip check` на Python 3.10 и 3.14;
 - изолированный `pip-audit` проверяет закреплённые dev/build и собственные audit dependencies и блокирует любой известный advisory, что строже порога high/critical;
 - Gitleaks с полной историей блокирует секреты без comments, summary или artifacts, а CodeQL выполняет расширенный Python-анализ;
 - статические тесты требуют полный commit SHA у каждого внешнего Action и fail-closed конфигурацию security jobs.

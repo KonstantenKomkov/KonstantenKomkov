@@ -13,4 +13,5 @@ pytest==9.1.1
 ruff==0.16.2
 setuptools==84.0.0
 tomli==2.4.1
+tzdata==2026.3
 typing_extensions==4.16.0
