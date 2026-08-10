@@ -68,7 +68,7 @@ jobs:
           fi
 
           phase="fixture-or-unclassified"
-          for allowed_phase in repository-fixture configuration activity-execute commit-count added-lines deleted-lines first-day last-day last-day-count; do
+          for allowed_phase in repository-fixture configuration git-refs git-log commit-metadata git-show file-change activity-execute commit-count added-lines deleted-lines first-day last-day last-day-count; do
             if [[ "$test_output" == *"SAFE_PHASE:$allowed_phase"* ]]; then
               phase="$allowed_phase"
               break

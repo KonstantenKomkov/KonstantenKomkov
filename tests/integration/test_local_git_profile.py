@@ -143,28 +143,37 @@ class LocalGitSource:
         until: datetime,
     ) -> Iterable[CommitMetadata]:
         assert repository == self._reference
-        refs = run_git(
-            self._repository,
-            "for-each-ref",
-            "--format=%(refname)",
-            "refs/heads",
-        ).splitlines()
-        for ref in refs:
-            log = run_git(
+        try:
+            refs = run_git(
                 self._repository,
-                "log",
-                ref,
-                f"--since={since.isoformat()}",
-                f"--until={until.isoformat()}",
-                "--format=%H%x09%aI%x09%ae",
-            )
-            for line in log.splitlines():
-                sha, authored_at, author_email = line.split("\t", maxsplit=2)
-                yield CommitMetadata(
-                    sha=sha,
-                    authored_at=datetime.fromisoformat(authored_at),
-                    author_email=author_email,
+                "for-each-ref",
+                "--format=%(refname)",
+                "refs/heads",
+            ).splitlines()
+        except Exception as error:
+            raise AssertionError("SAFE_PHASE:git-refs") from error
+        for ref in refs:
+            try:
+                log = run_git(
+                    self._repository,
+                    "log",
+                    ref,
+                    f"--since={since.isoformat()}",
+                    f"--until={until.isoformat()}",
+                    "--format=%H%x09%aI%x09%ae",
                 )
+            except Exception as error:
+                raise AssertionError("SAFE_PHASE:git-log") from error
+            for line in log.splitlines():
+                try:
+                    sha, authored_at, author_email = line.split("\t", maxsplit=2)
+                    yield CommitMetadata(
+                        sha=sha,
+                        authored_at=datetime.fromisoformat(authored_at),
+                        author_email=author_email,
+                    )
+                except Exception as error:
+                    raise AssertionError("SAFE_PHASE:commit-metadata") from error
 
     def get_file_changes(
         self,
@@ -172,26 +181,32 @@ class LocalGitSource:
         commit_sha: str,
     ) -> Sequence[FileChange]:
         assert repository == self._reference
-        numstat = run_git(
-            self._repository,
-            "show",
-            "--format=",
-            "--numstat",
-            commit_sha,
-            "--",
-        )
+        try:
+            numstat = run_git(
+                self._repository,
+                "show",
+                "--format=",
+                "--numstat",
+                commit_sha,
+                "--",
+            )
+        except Exception as error:
+            raise AssertionError("SAFE_PHASE:git-show") from error
         changes: list[FileChange] = []
         for line in numstat.splitlines():
-            additions, deletions, path = line.split("\t", maxsplit=2)
-            binary = additions == "-" or deletions == "-"
-            changes.append(
-                FileChange(
-                    path=path,
-                    additions=0 if binary else int(additions),
-                    deletions=0 if binary else int(deletions),
-                    binary=binary,
+            try:
+                additions, deletions, path = line.split("\t", maxsplit=2)
+                binary = additions == "-" or deletions == "-"
+                changes.append(
+                    FileChange(
+                        path=path,
+                        additions=0 if binary else int(additions),
+                        deletions=0 if binary else int(deletions),
+                        binary=binary,
+                    )
                 )
-            )
+            except Exception as error:
+                raise AssertionError("SAFE_PHASE:file-change") from error
         return tuple(changes)
 
     def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
@@ -307,6 +322,10 @@ def local_profile_fixture(tmp_path: Path) -> LocalProfileFixture:
 def test_local_git_activity_aggregation(local_profile_fixture: LocalProfileFixture) -> None:
     try:
         activity = local_profile_fixture.activity_provider.execute()
+    except AssertionError as error:
+        if str(error).startswith("SAFE_PHASE:"):
+            raise
+        raise AssertionError("SAFE_PHASE:activity-execute") from error
     except Exception as error:
         raise AssertionError("SAFE_PHASE:activity-execute") from error
 
