@@ -1,12 +1,16 @@
 """Use case for aggregating public-safe language and technology usage."""
 
-from it_activity.domain.activity import RepositoryReference
+from datetime import datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
+
+from it_activity.domain.activity import MAX_HISTORY_DAYS, RepositoryReference
 from it_activity.domain.usage import (
     UsageDataError,
     UsageReport,
     build_usage_report,
     detect_technologies,
 )
+from it_activity.ports.clock import Clock
 from it_activity.ports.configuration import ConfigurationProvider
 from it_activity.ports.usage_source import UsageSource
 
@@ -16,25 +20,37 @@ class UsageCollectionError(RuntimeError):
 
 
 class CollectUsage:
-    """Aggregate Linguist languages and allowlisted technologies across repositories."""
+    """Aggregate usage across repositories active during the trailing year."""
 
     def __init__(
         self,
         configuration_provider: ConfigurationProvider,
         usage_source: UsageSource,
+        clock: Clock,
     ) -> None:
         self._configuration_provider = configuration_provider
         self._usage_source = usage_source
+        self._clock = clock
 
     def execute(self) -> UsageReport:
-        """Return only allowlisted names, shares, and repository frequencies."""
+        """Return annual allowlisted names, shares, and repository frequencies."""
         configuration = self._configuration_provider.load()
+        now = self._clock.now()
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise UsageCollectionError("Системные часы вернули дату без часового пояса.")
+
+        configured_timezone = ZoneInfo(configuration.timezone)
+        local_now = now.astimezone(configured_timezone)
+        first_day = local_now.date() - timedelta(days=MAX_HISTORY_DAYS - 1)
+        since = datetime.combine(first_day, time.min, configured_timezone).astimezone(timezone.utc)
+        until = now.astimezone(timezone.utc)
+
         repositories = self._validated_repositories(
             configuration.github_login,
             configuration.expected_repositories,
         )
         excluded = {name.casefold() for name in configuration.excluded_repositories}
-        included = tuple(
+        candidates = tuple(
             repository
             for repository in sorted(
                 repositories,
@@ -42,12 +58,16 @@ class CollectUsage:
             )
             if repository.full_name.casefold() not in excluded
         )
+        included = self._repositories_active_during_year(
+            candidates,
+            configuration.author_emails,
+            since,
+            until,
+        )
         language_bytes: dict[str, int] = {}
         technology_counts: dict[str, int] = {}
 
         for repository in included:
-            if repository.empty:
-                continue
             for language, byte_count in self._usage_source.get_language_bytes(repository).items():
                 if (
                     not isinstance(language, str)
@@ -70,6 +90,37 @@ class CollectUsage:
             return build_usage_report(language_bytes, technology_counts, len(included))
         except UsageDataError as error:
             raise UsageCollectionError(str(error)) from None
+
+    def _repositories_active_during_year(
+        self,
+        repositories: tuple[RepositoryReference, ...],
+        author_emails: frozenset[str],
+        since: datetime,
+        until: datetime,
+    ) -> tuple[RepositoryReference, ...]:
+        active: list[RepositoryReference] = []
+        seen_commits: dict[str, tuple[str, datetime]] = {}
+
+        for repository in repositories:
+            if repository.empty:
+                continue
+            owner_activity = False
+            for commit in self._usage_source.iter_commits(repository, since, until):
+                identity = (commit.author_email, commit.authored_at)
+                previous_identity = seen_commits.get(commit.sha)
+                if previous_identity is not None and previous_identity != identity:
+                    raise UsageCollectionError("Одинаковый SHA содержит противоречивые метаданные.")
+                seen_commits[commit.sha] = identity
+
+                authored_at = commit.authored_at.astimezone(timezone.utc)
+                if authored_at < since or authored_at > until:
+                    continue
+                if commit.author_email in author_emails:
+                    owner_activity = True
+            if owner_activity:
+                active.append(repository)
+
+        return tuple(active)
 
     def _validated_repositories(
         self,

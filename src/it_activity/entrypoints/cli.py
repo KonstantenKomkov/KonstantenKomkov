@@ -139,6 +139,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             usage_report = CollectUsage(
                 configuration_provider=EnvironmentConfigurationProvider(),
                 usage_source=_build_github_source(),
+                clock=SystemClock(),
             ).execute()
         except (ActivitySourceError, ConfigurationError, UsageCollectionError) as error:
             print(f"Ошибка сбора: {error}", file=sys.stderr)
@@ -164,6 +165,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         try:
             configuration_provider = EnvironmentConfigurationProvider()
             github_source = _build_github_source()
+            clock = SystemClock()
             activity_source, activity_configuration_provider = _with_optional_local_activity(
                 github_source
             )
@@ -171,11 +173,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 activity_provider=CollectActivity(
                     configuration_provider=activity_configuration_provider,
                     activity_source=activity_source,
-                    clock=SystemClock(),
+                    clock=clock,
                 ),
                 usage_provider=CollectUsage(
                     configuration_provider=configuration_provider,
                     usage_source=github_source,
+                    clock=clock,
                 ),
                 renderer=SvgProfileRenderer(),
                 output_writer=FilesystemPublicOutputWriter(Path.cwd()),

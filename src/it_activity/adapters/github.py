@@ -66,6 +66,10 @@ class GitHubRestActivitySource:
         self._api_origin = (parsed_api_url.scheme, parsed_api_url.netloc)
         self._page_size = page_size
         self._repository_cache: dict[str, tuple[RepositoryReference, ...]] = {}
+        self._commit_cache: dict[
+            tuple[RepositoryReference, datetime, datetime],
+            tuple[CommitMetadata, ...],
+        ] = {}
         self._confirmed_empty_repository_ids: set[int] = set()
 
     def list_repositories(self, owner_login: str) -> Sequence[RepositoryReference]:
@@ -179,6 +183,13 @@ class GitHubRestActivitySource:
         ):
             raise GitHubApiError("Некорректно задан период истории GitHub.")
 
+        normalized_since = since.astimezone(timezone.utc)
+        normalized_until = until.astimezone(timezone.utc)
+        cache_key = (repository, normalized_since, normalized_until)
+        cached = self._commit_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         repository_path = quote(repository.full_name, safe="/")
         branch_values = self._get_paginated_array(
             f"/repos/{repository_path}/branches",
@@ -187,8 +198,10 @@ class GitHubRestActivitySource:
         )
         if not branch_values:
             self._confirmed_empty_repository_ids.add(repository.repository_id)
-            return
+            self._commit_cache[cache_key] = ()
+            return ()
         branch_names: set[str] = set()
+        commits: list[CommitMetadata] = []
         for branch_value in branch_values:
             branch = self._as_object(branch_value)
             branch_name = self._required_string(branch, "name")
@@ -200,15 +213,18 @@ class GitHubRestActivitySource:
                 f"/repos/{repository_path}/commits",
                 {
                     "sha": branch_name,
-                    "since": self._format_timestamp(since),
-                    "until": self._format_timestamp(until),
+                    "since": self._format_timestamp(normalized_since),
+                    "until": self._format_timestamp(normalized_until),
                 },
             )
             for commit_value in commit_values:
                 try:
-                    yield self._parse_commit(commit_value)
+                    commits.append(self._parse_commit(commit_value))
                 except ActivityDataError:
                     raise GitHubApiError("GitHub вернул некорректные данные коммита.") from None
+        result = tuple(commits)
+        self._commit_cache[cache_key] = result
+        return result
 
     def get_file_changes(
         self,

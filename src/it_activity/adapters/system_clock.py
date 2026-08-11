@@ -4,8 +4,11 @@ from datetime import datetime, timezone
 
 
 class SystemClock:
-    """Return the real current instant in UTC."""
+    """Return one stable process-assembly instant in UTC."""
+
+    def __init__(self) -> None:
+        self._current = datetime.now(timezone.utc)
 
     def now(self) -> datetime:
-        """Return a timezone-aware timestamp."""
-        return datetime.now(timezone.utc)
+        """Return the captured timezone-aware timestamp."""
+        return self._current

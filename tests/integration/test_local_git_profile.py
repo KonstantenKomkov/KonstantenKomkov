@@ -3,7 +3,7 @@
 import os
 import shutil
 import subprocess
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,7 +16,7 @@ from it_activity.adapters.svg_renderer import SvgProfileRenderer
 from it_activity.application.collect_activity import CollectActivity
 from it_activity.application.collect_usage import CollectUsage
 from it_activity.application.generate_profile import GenerateProfile
-from it_activity.domain.activity import FileChange, RepositoryReference
+from it_activity.domain.activity import CommitMetadata, FileChange, RepositoryReference
 from it_activity.domain.configuration import ProfileConfiguration
 from it_activity.domain.profile import PUBLIC_OUTPUT_PATHS
 from it_activity.domain.usage import allowlisted_manifest_marker
@@ -128,13 +128,27 @@ class FixedClock:
 class LocalUsageSource:
     """Test-only usage adapter for the temporary private repository."""
 
-    def __init__(self, repository: Path, reference: RepositoryReference) -> None:
+    def __init__(
+        self,
+        repository: Path,
+        reference: RepositoryReference,
+        activity_source: LocalGitActivitySource,
+    ) -> None:
         self._repository = repository
         self._reference = reference
+        self._activity_source = activity_source
 
     def list_repositories(self, owner_login: str) -> Sequence[RepositoryReference]:
         assert owner_login == "octocat"
         return (self._reference,)
+
+    def iter_commits(
+        self,
+        repository: RepositoryReference,
+        since: datetime,
+        until: datetime,
+    ) -> Iterable[CommitMetadata]:
+        return self._activity_source.iter_commits(repository, since, until)
 
     def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
         assert repository == self._reference
@@ -231,13 +245,14 @@ def local_profile_fixture(tmp_path: Path) -> LocalProfileFixture:
     configuration_provider = StaticConfigurationProvider(configuration)
     activity_source = LocalGitActivitySource((repository,))
     reference = activity_source.list_repositories("octocat")[0]
-    usage_source = LocalUsageSource(repository, reference)
+    usage_source = LocalUsageSource(repository, reference, activity_source)
+    clock = FixedClock(datetime(2026, 8, 10, 9, 0, tzinfo=timezone.utc))
     activity_provider = CollectActivity(
         configuration_provider,
         activity_source,
-        FixedClock(datetime(2026, 8, 10, 9, 0, tzinfo=timezone.utc)),
+        clock,
     )
-    usage_provider = CollectUsage(configuration_provider, usage_source)
+    usage_provider = CollectUsage(configuration_provider, usage_source, clock)
 
     return LocalProfileFixture(repository, output, activity_provider, usage_provider)
 

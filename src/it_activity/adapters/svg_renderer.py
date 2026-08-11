@@ -4,7 +4,12 @@ from collections.abc import Mapping, Sequence
 from html import escape
 
 from it_activity.adapters.usage_icons import UsageIcon, language_icon, technology_icon
-from it_activity.domain.activity import ActivityDataError, ActivityReport, DailyActivity
+from it_activity.domain.activity import (
+    MAX_HISTORY_DAYS,
+    ActivityDataError,
+    ActivityReport,
+    DailyActivity,
+)
 from it_activity.domain.profile import (
     DEFAULT_OPEN_PERIOD,
     README_PATH,
@@ -177,13 +182,19 @@ class SvgProfileRenderer:
         row_count = max(len(usage.languages), len(usage.technologies), 1)
         height = max(180, 112 + row_count * 34)
         elements = self._svg_header(
-            title="Языки и технологии",
-            description="Агрегированные доли языков и частота технологий по репозиториям.",
+            title=f"Языки и технологии за {MAX_HISTORY_DAYS} дней",
+            description=(
+                "Агрегированные доли языков и частота технологий в репозиториях "
+                f"с активностью владельца за последние {MAX_HISTORY_DAYS} дней."
+            ),
             height=height,
         )
         elements.extend(
             [
-                '<text class="title" x="28" y="38">Языки и технологии</text>',
+                (
+                    '<text class="title" x="28" y="38">Языки и технологии · '
+                    f"{MAX_HISTORY_DAYS} дней</text>"
+                ),
                 '<text class="metric" x="28" y="76">Языки</text>',
                 '<text class="metric" x="382" y="76">Технологии</text>',
             ]
@@ -439,9 +450,9 @@ class SvgProfileRenderer:
             )
         lines.extend(
             [
-                "## Языки и технологии",
+                f"## Языки и технологии за {MAX_HISTORY_DAYS} дней",
                 "",
-                f"![Языки и технологии]({USAGE_SVG_PATH})",
+                f"![Языки и технологии за {MAX_HISTORY_DAYS} дней]({USAGE_SVG_PATH})",
             ]
         )
         return "\n".join(lines) + "\n"

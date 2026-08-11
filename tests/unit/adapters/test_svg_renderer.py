@@ -91,6 +91,8 @@ def test_usage_rows_embed_branded_and_generic_icons_without_external_assets() ->
 
     for icon in ("python", "typescript", "nodedotjs", "docker", "generic-language"):
         assert f'data-icon="{icon}"' in usage_svg
+    assert '<title id="title">Языки и технологии за 365 дней</title>' in usage_svg
+    assert "Языки и технологии · 365 дней" in usage_svg
     assert 'data-icon="generic-technology"' in fallback_svg
     assert "<image" not in usage_svg.casefold()
     assert "href=" not in usage_svg.casefold()
@@ -110,6 +112,7 @@ def test_readme_uses_supported_details_and_opens_only_thirty_days() -> None:
     assert "generated/lines-7.svg" in readme
     assert "generated/lines-30.svg" in readme
     assert "generated/lines-365.svg" in readme
+    assert "## Языки и технологии за 365 дней" in readme
     assert USAGE_SVG_PATH in readme
     assert "<script" not in readme.casefold()
     assert "javascript:" not in readme.casefold()
@@ -156,7 +159,7 @@ def test_svg_snapshots_have_expected_hashes() -> None:
     }
 
     assert hashes == {
-        "README.md": "d47409a7afb7f379546aa2f0b629eccbb24b19554e4bdf41867f503a300700c0",
+        "README.md": "d8adf79c6c6c531e00249ace788ed507ac55d1fc5b0f2959643ccb08c65ac077",
         "generated/commits-30.svg": (
             "b59ec6b2297e5eb2f1ac226d73dd92a39bd648c73e34690bbee29d494001b0b3"
         ),
@@ -175,5 +178,5 @@ def test_svg_snapshots_have_expected_hashes() -> None:
         "generated/lines-7.svg": (
             "422ad7e750d81139af299e5749004b4e84452d72cb8de96734257b739687c368"
         ),
-        "generated/usage.svg": "4dc3bb83f388b00159093c20fdd821714da75fbf791302256eb0a08e02bba045",
+        "generated/usage.svg": "4958a6da97f6a3d65a05b17af893888b5fcb56a5367aa39cc9197a48b67bc6a1",
     }

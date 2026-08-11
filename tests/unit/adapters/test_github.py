@@ -196,16 +196,21 @@ def test_iter_commits_fetches_every_branch_and_page_without_messages() -> None:
             ]
         ),
     }
+    http_client = StubHttpClient(routes)
     source = GitHubRestActivitySource(
-        StubHttpClient(routes),
+        http_client,
         "fixture-credential",
         api_url=API_URL,
         page_size=2,
     )
 
     commits = tuple(source.iter_commits(repository, since, until))
+    request_count = len(http_client.requests)
+    cached_commits = tuple(source.iter_commits(repository, since, until))
 
     assert [commit.sha for commit in commits] == [SHA_A, SHA_B, SHA_C, SHA_A]
+    assert cached_commits == commits
+    assert len(http_client.requests) == request_count
     assert commits[0].author_email == "owner@example.invalid"
     assert "private fixture message" not in repr(commits)
     assert "owner@example.invalid" not in repr(commits)
