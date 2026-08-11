@@ -8,6 +8,7 @@ import pytest
 
 from it_activity.adapters.composite_activity import CompositeActivitySource
 from it_activity.adapters.composite_github import CompositeGitHubActivitySource
+from it_activity.domain.activity import RepositoryReference
 from it_activity.entrypoints import cli
 from it_activity.entrypoints.cli import main
 
@@ -95,7 +96,7 @@ def test_activity_assembly_is_unchanged_without_local_paths(
     assert activity_source is github_source
 
 
-def test_activity_assembly_adds_runtime_local_repositories_to_expected_set(
+def test_activity_assembly_adds_and_prefers_runtime_local_repositories(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     local_path = Path("/private/fixture-local-clone")
@@ -104,18 +105,31 @@ def test_activity_assembly_adds_runtime_local_repositories_to_expected_set(
     monkeypatch.setenv("IT_ACTIVITY_AUTHOR_EMAILS", "private-owner@example.invalid")
     monkeypatch.setenv("IT_ACTIVITY_EXPECTED_REPOSITORIES", "octocat/profile")
 
+    local_repository = RepositoryReference(9, "fixture-org/private-local", private=True)
+    api_repository = RepositoryReference(1, "FIXTURE-ORG/PRIVATE-LOCAL", private=True)
+
     class StubLocalGitActivitySource:
         repository_names = frozenset({"fixture-org/private-local"})
 
         def __init__(self, repository_paths: tuple[Path, ...]) -> None:
             assert repository_paths == (local_path,)
 
+        def list_repositories(self, owner_login: str) -> tuple[RepositoryReference, ...]:
+            assert owner_login == "octocat"
+            return (local_repository,)
+
+    class StubGitHubActivitySource:
+        def list_repositories(self, owner_login: str) -> tuple[RepositoryReference, ...]:
+            assert owner_login == "octocat"
+            return (api_repository,)
+
     monkeypatch.setattr(cli, "LocalGitActivitySource", StubLocalGitActivitySource)
-    github_source = cast(CompositeGitHubActivitySource, object())
+    github_source = cast(CompositeGitHubActivitySource, StubGitHubActivitySource())
 
     activity_source, configuration_provider = cli._with_optional_local_activity(github_source)
 
     assert isinstance(activity_source, CompositeActivitySource)
+    assert activity_source.list_repositories("octocat") == (local_repository,)
     assert configuration_provider.load().expected_repositories == frozenset(
         {"octocat/profile", "fixture-org/private-local"}
     )

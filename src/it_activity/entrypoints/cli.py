@@ -52,7 +52,7 @@ def _with_optional_local_activity(
 
     local_source = LocalGitActivitySource(repository_paths)
     return (
-        CompositeActivitySource((github_source, local_source)),
+        CompositeActivitySource((local_source, github_source)),
         EnvironmentConfigurationProvider(
             additional_expected_repositories=local_source.repository_names
         ),
