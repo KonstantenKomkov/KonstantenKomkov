@@ -150,10 +150,6 @@ class LocalUsageSource:
     ) -> Iterable[CommitMetadata]:
         return self._activity_source.iter_commits(repository, since, until)
 
-    def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
-        assert repository == self._reference
-        return {"Python": 300, "Private Internal DSL": 100}
-
     def get_file_changes(
         self,
         repository: RepositoryReference,
@@ -279,9 +275,8 @@ def test_local_git_usage_aggregation(local_profile_fixture: LocalProfileFixture)
     usage = local_profile_fixture.usage_provider.execute()
 
     assert [(item.name, item.share_basis_points, item.active_days) for item in usage.languages] == [
-        ("Python", 7083, 2),
-        ("TypeScript", 1667, 1),
-        ("Other", 1250, 0),
+        ("Python", 6667, 2),
+        ("TypeScript", 3333, 1),
     ]
     assert [(item.name, item.repository_count) for item in usage.technologies] == [("Python", 1)]
 

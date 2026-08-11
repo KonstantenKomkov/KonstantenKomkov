@@ -171,32 +171,17 @@ def detect_technologies(manifest_markers: Sequence[str]) -> frozenset[str]:
 
 
 def build_usage_report(
-    language_bytes: Mapping[str, int],
     language_active_days: Mapping[str, int],
     technology_repository_counts: Mapping[str, int],
     repository_count: int,
 ) -> UsageReport:
-    """Blend Linguist code volume and annual active days with equal weight."""
+    """Build deterministic language shares from annual active days only."""
     if (
         not isinstance(repository_count, int)
         or isinstance(repository_count, bool)
         or repository_count < 0
     ):
         raise UsageDataError("Некорректно задано число репозиториев.")
-
-    safe_language_bytes: dict[str, int] = {}
-    for language, byte_count in language_bytes.items():
-        if (
-            not isinstance(language, str)
-            or not isinstance(byte_count, int)
-            or isinstance(byte_count, bool)
-            or byte_count < 0
-        ):
-            raise UsageDataError("GitHub вернул некорректную языковую статистику.")
-        if byte_count == 0:
-            continue
-        safe_language = language if language in ALLOWED_LANGUAGES else OTHER_LANGUAGE
-        safe_language_bytes[safe_language] = safe_language_bytes.get(safe_language, 0) + byte_count
 
     safe_language_days: dict[str, int] = {}
     for language, active_days in language_active_days.items():
@@ -210,8 +195,7 @@ def build_usage_report(
         if active_days > 0:
             safe_language_days[language] = active_days
 
-    language_weights = _combined_language_weights(safe_language_bytes, safe_language_days)
-    language_shares = _allocate_basis_points(language_weights)
+    language_shares = _allocate_basis_points(safe_language_days)
     languages = tuple(
         LanguageUsage(
             name=name,
@@ -219,7 +203,7 @@ def build_usage_report(
             active_days=safe_language_days.get(name, 0),
         )
         for name, _ in sorted(
-            language_weights.items(),
+            safe_language_days.items(),
             key=lambda item: (-item[1], item[0]),
         )
     )
@@ -253,30 +237,6 @@ def build_usage_report(
     return UsageReport(languages=languages, technologies=tuple(technologies))
 
 
-def _combined_language_weights(
-    language_bytes: Mapping[str, int],
-    language_active_days: Mapping[str, int],
-) -> Mapping[str, int]:
-    total_bytes = sum(language_bytes.values())
-    total_active_days = sum(language_active_days.values())
-    names = language_bytes.keys() | language_active_days.keys()
-    if total_bytes == 0:
-        return {name: language_active_days[name] for name in names}
-    if total_active_days == 0:
-        return {name: language_bytes[name] for name in names}
-
-    # All languages share the omitted denominator
-    # 2 * total_bytes * total_active_days. Keeping only the numerator gives an
-    # exact, integer-only 50/50 blend of normalized code volume and active days.
-    return {
-        name: (
-            language_bytes.get(name, 0) * total_active_days
-            + language_active_days.get(name, 0) * total_bytes
-        )
-        for name in names
-    }
-
-
 def _allocate_basis_points(weights: Mapping[str, int]) -> Mapping[str, int]:
     total = sum(weights.values())
     if total == 0:
@@ -289,7 +249,7 @@ def _allocate_basis_points(weights: Mapping[str, int]) -> Mapping[str, int]:
     for name in sorted(remainders, key=lambda item: (-remainders[item], item))[:remaining]:
         shares[name] += 1
 
-    # A positive byte count must remain visible even when its exact share is
+    # A positive weight must remain visible even when its exact share is
     # below one basis point. Transfer points from the largest displayed shares
     # only after the regular largest-remainder allocation, so ordinary rounding
     # results remain unchanged.

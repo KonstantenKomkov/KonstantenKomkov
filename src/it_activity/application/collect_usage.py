@@ -66,19 +66,9 @@ class CollectUsage:
             until,
             configured_timezone,
         )
-        language_bytes: dict[str, int] = {}
         technology_counts: dict[str, int] = {}
 
         for repository in included:
-            for language, byte_count in self._usage_source.get_language_bytes(repository).items():
-                if (
-                    not isinstance(language, str)
-                    or not isinstance(byte_count, int)
-                    or isinstance(byte_count, bool)
-                    or byte_count < 0
-                ):
-                    raise UsageCollectionError("GitHub вернул некорректную языковую статистику.")
-                language_bytes[language] = language_bytes.get(language, 0) + byte_count
             try:
                 technologies = detect_technologies(
                     self._usage_source.list_manifest_markers(repository)
@@ -90,7 +80,6 @@ class CollectUsage:
 
         try:
             return build_usage_report(
-                language_bytes,
                 {language: len(days) for language, days in language_days.items()},
                 technology_counts,
                 len(included),

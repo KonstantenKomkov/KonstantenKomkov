@@ -578,27 +578,6 @@ def test_file_pagination_rejects_cross_origin_link_without_leaking_it() -> None:
     assert "private_name.py" not in message
 
 
-def test_get_language_bytes_returns_linguist_counts_without_repository_details() -> None:
-    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
-    source = GitHubRestActivitySource(
-        StubHttpClient(
-            {
-                url("/repos/fixture-org/private-fixture/languages"): response(
-                    {"Python": 120, "Private Fixture Language": 30}
-                )
-            }
-        ),
-        "fixture-credential",
-        api_url=API_URL,
-        page_size=2,
-    )
-
-    languages = source.get_language_bytes(repository)
-
-    assert languages == {"Python": 120, "Private Fixture Language": 30}
-    assert "private-fixture" not in repr(languages)
-
-
 def test_usage_treats_confirmed_empty_repository_conflicts_as_zero() -> None:
     repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
     since = datetime(2026, 8, 1, tzinfo=timezone.utc)
@@ -611,9 +590,6 @@ def test_usage_treats_confirmed_empty_repository_conflicts_as_zero() -> None:
                     page="1",
                     per_page="2",
                 ): response({"message": "Git Repository is empty."}, status=409),
-                url("/repos/fixture-org/private-fixture/languages"): response(
-                    {"message": "Git Repository is empty."}, status=409
-                ),
                 url(
                     "/repos/fixture-org/private-fixture/git/trees/main",
                     recursive="1",
@@ -626,29 +602,7 @@ def test_usage_treats_confirmed_empty_repository_conflicts_as_zero() -> None:
     )
 
     assert tuple(source.iter_commits(repository, since, until)) == ()
-    assert source.get_language_bytes(repository) == {}
     assert source.list_manifest_markers(repository) == ()
-
-
-def test_usage_rejects_unconfirmed_empty_repository_conflict() -> None:
-    repository = RepositoryReference(1, "fixture-org/private-fixture", private=True)
-    source = GitHubRestActivitySource(
-        StubHttpClient(
-            {
-                url("/repos/fixture-org/private-fixture/languages"): response(
-                    {"message": "Git Repository is empty."}, status=409
-                )
-            }
-        ),
-        "fixture-credential",
-        api_url=API_URL,
-        page_size=2,
-    )
-
-    with pytest.raises(GitHubApiError, match="Git-репозиторий пуст") as captured:
-        source.get_language_bytes(repository)
-
-    assert "private-fixture" not in str(captured.value)
 
 
 def test_manifest_tree_returns_only_allowlisted_markers() -> None:

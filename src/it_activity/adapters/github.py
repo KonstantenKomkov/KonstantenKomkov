@@ -115,28 +115,6 @@ class GitHubRestActivitySource:
         self._repository_cache[cache_key] = result
         return result
 
-    def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
-        """Return byte counts calculated by GitHub Linguist for the default branch."""
-        repository_path = quote(repository.full_name, safe="/")
-        try:
-            value = self._as_object(self._get_json(f"/repos/{repository_path}/languages"))
-        except _EmptyGitRepositoryError:
-            if repository.repository_id not in self._confirmed_empty_repository_ids:
-                raise
-            return {}
-        language_bytes: dict[str, int] = {}
-        for language, byte_count in value.items():
-            if (
-                not language
-                or not isinstance(byte_count, int)
-                or isinstance(byte_count, bool)
-                or byte_count < 0
-                or any(character in language for character in "\r\n\0")
-            ):
-                raise GitHubApiError("GitHub вернул некорректную языковую статистику.")
-            language_bytes[language] = byte_count
-        return language_bytes
-
     def list_manifest_markers(self, repository: RepositoryReference) -> Sequence[str]:
         """Traverse the default tree and return no private paths, only allowlisted markers."""
         repository_path = quote(repository.full_name, safe="/")
@@ -409,8 +387,6 @@ class GitHubRestActivitySource:
             return "commits"
         if "/commits/" in path:
             return "commit-files"
-        if path.endswith("/languages"):
-            return "languages"
         if "/git/trees/" in path:
             return "tree"
         return "request"

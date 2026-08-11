@@ -38,23 +38,20 @@ class FixedClock:
 
 
 class FakeUsageSource:
-    """Expose in-memory history, Linguist bytes, and manifest markers."""
+    """Expose in-memory history, file changes, and manifest markers."""
 
     def __init__(
         self,
         repositories: Sequence[RepositoryReference],
         commits: Mapping[int, Sequence[CommitMetadata]],
-        languages: Mapping[int, Mapping[str, int]],
         markers: Mapping[int, Sequence[str]],
         changes: Mapping[tuple[int, str], Sequence[FileChange]] | None = None,
     ) -> None:
         self._repositories = repositories
         self._commits = commits
-        self._languages = languages
         self._markers = markers
         self._changes = {} if changes is None else changes
         self.history_calls: list[tuple[int, datetime, datetime]] = []
-        self.language_calls: list[int] = []
         self.manifest_calls: list[int] = []
         self.file_change_calls: list[tuple[int, str]] = []
 
@@ -70,10 +67,6 @@ class FakeUsageSource:
     ) -> Iterable[CommitMetadata]:
         self.history_calls.append((repository.repository_id, since, until))
         return self._commits.get(repository.repository_id, ())
-
-    def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
-        self.language_calls.append(repository.repository_id)
-        return self._languages[repository.repository_id]
 
     def get_file_changes(
         self,
@@ -126,13 +119,6 @@ def test_collect_usage_uses_repositories_with_owner_activity_during_last_year() 
             ),
         },
         {
-            1: {"Python": 100, "JavaScript": 100},
-            2: {"Python": 100, "Private Fixture Language": 100},
-            4: {"Rust": 999},
-            5: {"Go": 999},
-            6: {"Ruby": 999},
-        },
-        {
             1: ("package.json", "Dockerfile"),
             2: ("package.json", "pyproject.toml"),
             4: ("Cargo.toml",),
@@ -159,11 +145,7 @@ def test_collect_usage_uses_repositories_with_owner_activity_during_last_year() 
 
     assert [
         (item.name, item.share_basis_points, item.active_days) for item in report.languages
-    ] == [
-        ("Python", 7500, 2),
-        ("JavaScript", 1250, 0),
-        ("Other", 1250, 0),
-    ]
+    ] == [("Python", 10_000, 2)]
     assert [
         (item.name, item.repository_count, item.repository_share_basis_points)
         for item in report.technologies
@@ -174,7 +156,6 @@ def test_collect_usage_uses_repositories_with_owner_activity_during_last_year() 
     ]
     assert [repository_id for repository_id, _, _ in source.history_calls] == [2, 6, 1, 5]
     assert all(since == cutoff and until == now for _, since, until in source.history_calls)
-    assert source.language_calls == [2, 1]
     assert source.manifest_calls == [2, 1]
     assert source.file_change_calls == [(2, SHA_B), (1, SHA_A)]
     assert "Private Fixture Language" not in repr(report)
@@ -185,7 +166,7 @@ def test_collect_usage_uses_repositories_with_owner_activity_during_last_year() 
 def test_collect_usage_rejects_missing_expected_access_without_private_data() -> None:
     now = datetime(2026, 8, 10, 9, 0, tzinfo=timezone.utc)
     repositories = (RepositoryReference(1, "fixture-org/visible-private", private=True),)
-    source = FakeUsageSource(repositories, {}, {}, {})
+    source = FakeUsageSource(repositories, {}, {})
     configuration = ProfileConfiguration(
         github_login="octocat",
         author_emails=frozenset({"owner@example.invalid"}),
@@ -207,7 +188,6 @@ def test_collect_usage_rejects_missing_expected_access_without_private_data() ->
     assert "visible-private" not in message
     assert "missing-private" not in message
     assert source.history_calls == []
-    assert source.language_calls == []
     assert source.manifest_calls == []
     assert source.file_change_calls == []
 
@@ -223,10 +203,6 @@ def test_collect_usage_deduplicates_sha_and_language_days_globally() -> None:
         {
             1: (metadata(SHA_A, now), metadata(SHA_B, now + timedelta(minutes=1))),
             2: (metadata(SHA_A, now),),
-        },
-        {
-            1: {"Python": 100},
-            2: {"JavaScript": 100},
         },
         {1: (), 2: ()},
         {
@@ -250,7 +226,6 @@ def test_collect_usage_deduplicates_sha_and_language_days_globally() -> None:
         (item.name, item.share_basis_points, item.active_days) for item in report.languages
     ] == [("Python", 10_000, 1)]
     assert source.file_change_calls == [(1, SHA_A), (1, SHA_B)]
-    assert source.language_calls == [1]
 
 
 def test_collect_usage_rejects_conflicting_duplicate_sha_without_private_data() -> None:
@@ -265,7 +240,6 @@ def test_collect_usage_rejects_conflicting_duplicate_sha_without_private_data() 
             1: (metadata(SHA_A, now),),
             2: (metadata(SHA_A, now, "conflict@example.invalid"),),
         },
-        {},
         {},
     )
     configuration = ProfileConfiguration(
@@ -285,7 +259,6 @@ def test_collect_usage_rejects_conflicting_duplicate_sha_without_private_data() 
     assert "SHA" in message
     assert "fixture-org" not in message
     assert "example.invalid" not in message
-    assert source.language_calls == []
     assert source.manifest_calls == []
 
 
@@ -295,7 +268,7 @@ def test_collect_usage_requires_timezone_aware_clock() -> None:
         author_emails=frozenset({"owner@example.invalid"}),
         expected_repositories=frozenset({"octocat/profile"}),
     )
-    source = FakeUsageSource((), {}, {}, {})
+    source = FakeUsageSource((), {}, {})
 
     with pytest.raises(UsageCollectionError, match="часового пояса"):
         CollectUsage(

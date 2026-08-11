@@ -28,7 +28,6 @@ def sample_activity_report() -> ActivityReport:
 
 def sample_usage_report() -> UsageReport:
     return build_usage_report(
-        {"Python": 600, "TypeScript": 300, "Cap'n Proto": 100},
         {"Python": 12, "TypeScript": 8, "Cap'n Proto": 1},
         {"Node.js": 3, "Docker": 2, "Python": 1},
         repository_count=4,
@@ -85,7 +84,6 @@ def test_usage_rows_embed_branded_and_generic_icons_without_external_assets() ->
         activity,
         build_usage_report(
             {"1C Enterprise": 1},
-            {"1C Enterprise": 1},
             {"Ansible": 1},
             repository_count=1,
         ),
@@ -95,8 +93,8 @@ def test_usage_rows_embed_branded_and_generic_icons_without_external_assets() ->
         assert f'data-icon="{icon}"' in usage_svg
     assert '<title id="title">Языки и технологии за 365 дней</title>' in usage_svg
     assert "Языки и технологии · 365 дней" in usage_svg
-    assert "Языки · 50% код + 50% дни" in usage_svg
-    assert "дн." in usage_svg
+    assert "Языки · активные дни" in usage_svg
+    assert "12 дн. ·" in usage_svg
     assert 'data-icon="generic-technology"' in fallback_svg
     assert "<image" not in usage_svg.casefold()
     assert "href=" not in usage_svg.casefold()
@@ -182,5 +180,5 @@ def test_svg_snapshots_have_expected_hashes() -> None:
         "generated/lines-7.svg": (
             "422ad7e750d81139af299e5749004b4e84452d72cb8de96734257b739687c368"
         ),
-        "generated/usage.svg": "fb96e8f3f572912524f556a2fa37934731e60cfa9144ad3eabfb398a4094f19c",
+        "generated/usage.svg": "9e6bd02dae66451df6449dfd351a63655886ff67d3ee0b15329945ccbb043f08",
     }

@@ -1,6 +1,6 @@
 """Port for period-aware GitHub Linguist data and repository manifests."""
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Sequence
 from datetime import datetime
 from typing import Protocol
 
@@ -20,9 +20,6 @@ class UsageSource(Protocol):
         until: datetime,
     ) -> Iterable[CommitMetadata]:
         """Yield commits used to select repositories active during the usage period."""
-
-    def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
-        """Return GitHub Linguist byte counts for one repository."""
 
     def get_file_changes(
         self,
