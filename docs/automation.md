@@ -1,8 +1,10 @@
 # Автоматическое обновление профиля
 
-Workflow `.github/workflows/update-profile.yml` запускается ежедневно в 00:17 UTC
-и вручную через `workflow_dispatch`. Он обращается к рабочим репозиториям только
-через GitHub REST API, не создаёт их клоны и не использует cache или artifacts.
+Workflow `.github/workflows/update-profile.yml` запускается ежедневно в 00:17 UTC,
+вручную через `workflow_dispatch` и после изменения кода генератора в `main`.
+Generated-only коммиты не запускают его повторно. Он обращается к рабочим
+репозиториям только через GitHub REST API, не создаёт их клоны и не использует
+cache или artifacts.
 
 ## Настройка GitHub
 

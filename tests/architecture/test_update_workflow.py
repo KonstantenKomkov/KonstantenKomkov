@@ -36,9 +36,15 @@ def all_workflows() -> tuple[str, ...]:
     )
 
 
-def test_update_workflow_is_scheduled_and_manually_dispatchable() -> None:
+def test_update_workflow_runs_on_schedule_dispatch_and_generator_changes() -> None:
     workflow = workflow_text()
 
+    trigger_configuration = workflow.split("permissions:", maxsplit=1)[0]
+    assert "push:" in trigger_configuration
+    assert '      - "src/**"' in trigger_configuration
+    assert '      - ".github/workflows/update-profile.yml"' in trigger_configuration
+    assert "generated/**" not in trigger_configuration
+    assert "README.md" not in trigger_configuration
     assert "schedule:" in workflow
     assert re.search(r'^\s+- cron: "[^"\n]+"$', workflow, flags=re.MULTILINE)
     assert "workflow_dispatch:" in workflow

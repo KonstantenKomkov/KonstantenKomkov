@@ -1,6 +1,12 @@
 name: Update activity profile
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - ".github/workflows/update-profile.yml"
   schedule:
     - cron: "17 0 * * *"
   workflow_dispatch:
