@@ -18,6 +18,7 @@ from it_activity.domain.activity import (
     RepositoryReference,
 )
 from it_activity.domain.configuration import ConfigurationError, valid_repository_full_name
+from it_activity.domain.usage import allowlisted_manifest_marker
 from it_activity.ports.activity_source import ActivitySourceError
 
 LOCAL_REPOSITORIES_VARIABLE = "IT_ACTIVITY_LOCAL_REPOSITORIES"
@@ -204,6 +205,33 @@ class LocalGitActivitySource:
                 "--",
             )
         return self._parse_numstat(output)
+
+    def list_manifest_markers(self, repository: RepositoryReference) -> Sequence[str]:
+        """Return only allowlisted markers from the current local HEAD tree."""
+        local_repository = self._repository_for(repository)
+        if repository.empty:
+            return ()
+        output = self._run_git(
+            local_repository.path,
+            "ls-tree",
+            "-r",
+            "--name-only",
+            "-z",
+            "HEAD",
+            "--",
+        )
+        markers: set[str] = set()
+        for raw_path in output.split(b"\0"):
+            if not raw_path:
+                continue
+            path = self._decode_git_path(
+                raw_path,
+                "Локальное Git-дерево содержит некорректные данные.",
+            )
+            marker = allowlisted_manifest_marker(path)
+            if marker is not None:
+                markers.add(marker)
+        return tuple(sorted(markers))
 
     def _discover_repositories(
         self,
@@ -474,11 +502,14 @@ class LocalGitActivitySource:
         return tuple(changes)
 
     @staticmethod
-    def _decode_git_path(raw_path: bytes) -> str:
+    def _decode_git_path(
+        raw_path: bytes,
+        error_message: str = "Локальный Git diff содержит некорректные данные.",
+    ) -> str:
         try:
             path = raw_path.decode("utf-8")
         except UnicodeDecodeError:
-            raise ActivitySourceError("Локальный Git diff содержит некорректные данные.") from None
+            raise ActivitySourceError(error_message) from None
         if not path or any(character in path for character in "\r\n\0"):
-            raise ActivitySourceError("Локальный Git diff содержит некорректные данные.")
+            raise ActivitySourceError(error_message)
         return path

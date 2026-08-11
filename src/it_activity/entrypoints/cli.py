@@ -24,10 +24,11 @@ from it_activity.application.collect_usage import CollectUsage, UsageCollectionE
 from it_activity.application.generate_profile import GenerateProfile, ProfileGenerationError
 from it_activity.application.validate_configuration import ValidateConfiguration
 from it_activity.domain.configuration import ConfigurationError
-from it_activity.ports.activity_source import ActivitySource, ActivitySourceError
+from it_activity.ports.activity_source import ActivitySourceError
 from it_activity.ports.configuration import ConfigurationProvider
 from it_activity.ports.output import PublicOutputError
 from it_activity.ports.rendering import ProfileRenderingError
+from it_activity.ports.usage_source import UsageSource
 
 
 def _build_github_source() -> GitHubRestActivitySource:
@@ -39,9 +40,9 @@ def _build_github_source() -> GitHubRestActivitySource:
 
 
 def _with_optional_local_activity(
-    github_source: ActivitySource,
-) -> tuple[ActivitySource, ConfigurationProvider]:
-    """Extend GitHub activity with local clones configured only at runtime."""
+    github_source: UsageSource,
+) -> tuple[UsageSource, ConfigurationProvider]:
+    """Extend GitHub profile inputs with local clones configured only at runtime."""
     repository_paths = EnvironmentLocalRepositoryPathsProvider().load()
     if not repository_paths:
         return github_source, EnvironmentConfigurationProvider()
@@ -72,7 +73,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers.add_parser(
         "usage",
-        help="собрать обезличенные языки и технологии из GitHub",
+        help="собрать обезличенные языки и технологии из настроенных источников",
     )
     subparsers.add_parser(
         "generate",
@@ -136,9 +137,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if arguments.command == "usage":
         try:
+            github_source = _build_github_source()
+            usage_source, usage_configuration_provider = _with_optional_local_activity(
+                github_source
+            )
             usage_report = CollectUsage(
-                configuration_provider=EnvironmentConfigurationProvider(),
-                usage_source=_build_github_source(),
+                configuration_provider=usage_configuration_provider,
+                usage_source=usage_source,
                 clock=SystemClock(),
             ).execute()
         except (ActivitySourceError, ConfigurationError, UsageCollectionError) as error:
@@ -163,7 +168,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if arguments.command == "generate":
         try:
-            configuration_provider = EnvironmentConfigurationProvider()
             github_source = _build_github_source()
             clock = SystemClock()
             activity_source, activity_configuration_provider = _with_optional_local_activity(
@@ -176,8 +180,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                     clock=clock,
                 ),
                 usage_provider=CollectUsage(
-                    configuration_provider=configuration_provider,
-                    usage_source=github_source,
+                    configuration_provider=activity_configuration_provider,
+                    usage_source=activity_source,
                     clock=clock,
                 ),
                 renderer=SvgProfileRenderer(),

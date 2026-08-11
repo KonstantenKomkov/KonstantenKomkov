@@ -3,7 +3,7 @@
 import os
 import shutil
 import subprocess
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,10 +16,9 @@ from it_activity.adapters.svg_renderer import SvgProfileRenderer
 from it_activity.application.collect_activity import CollectActivity
 from it_activity.application.collect_usage import CollectUsage
 from it_activity.application.generate_profile import GenerateProfile
-from it_activity.domain.activity import CommitMetadata, FileChange, RepositoryReference
+from it_activity.domain.activity import FileChange
 from it_activity.domain.configuration import ProfileConfiguration
 from it_activity.domain.profile import PUBLIC_OUTPUT_PATHS
-from it_activity.domain.usage import allowlisted_manifest_marker
 from it_activity.ports.activity_source import ActivitySourceError
 
 PRIVATE_REPOSITORY_NAME = "fixture-org/private-project"
@@ -125,52 +124,6 @@ class FixedClock:
         return self._current
 
 
-class LocalUsageSource:
-    """Test-only usage adapter for the temporary private repository."""
-
-    def __init__(
-        self,
-        repository: Path,
-        reference: RepositoryReference,
-        activity_source: LocalGitActivitySource,
-    ) -> None:
-        self._repository = repository
-        self._reference = reference
-        self._activity_source = activity_source
-
-    def list_repositories(self, owner_login: str) -> Sequence[RepositoryReference]:
-        assert owner_login == "octocat"
-        return (self._reference,)
-
-    def iter_commits(
-        self,
-        repository: RepositoryReference,
-        since: datetime,
-        until: datetime,
-    ) -> Iterable[CommitMetadata]:
-        return self._activity_source.iter_commits(repository, since, until)
-
-    def get_file_changes(
-        self,
-        repository: RepositoryReference,
-        commit_sha: str,
-    ) -> Sequence[FileChange]:
-        return self._activity_source.get_file_changes(repository, commit_sha)
-
-    def list_manifest_markers(self, repository: RepositoryReference) -> Sequence[str]:
-        assert repository == self._reference
-        paths = run_git(
-            self._repository,
-            "ls-tree",
-            "-r",
-            "--name-only",
-            "HEAD",
-        ).splitlines()
-        return tuple(
-            marker for path in paths if (marker := allowlisted_manifest_marker(path)) is not None
-        )
-
-
 def create_private_repository(repository: Path) -> None:
     """Create branches, duplicate SHAs, private metadata, and excluded files."""
     repository.mkdir()
@@ -247,15 +200,13 @@ def local_profile_fixture(tmp_path: Path) -> LocalProfileFixture:
     )
     configuration_provider = StaticConfigurationProvider(configuration)
     activity_source = LocalGitActivitySource((repository,))
-    reference = activity_source.list_repositories("octocat")[0]
-    usage_source = LocalUsageSource(repository, reference, activity_source)
     clock = FixedClock(datetime(2026, 8, 10, 9, 0, tzinfo=timezone.utc))
     activity_provider = CollectActivity(
         configuration_provider,
         activity_source,
         clock,
     )
-    usage_provider = CollectUsage(configuration_provider, usage_source, clock)
+    usage_provider = CollectUsage(configuration_provider, activity_source, clock)
 
     return LocalProfileFixture(repository, output, activity_provider, usage_provider)
 

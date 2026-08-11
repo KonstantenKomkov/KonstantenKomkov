@@ -3,8 +3,6 @@
 import re
 from pathlib import Path
 
-from it_activity.domain.profile import PUBLIC_OUTPUT_PATHS
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW_ROOT = PROJECT_ROOT / ".github" / "workflows"
 WORKFLOW_PATH = WORKFLOW_ROOT / "update-profile.yml"
@@ -13,19 +11,6 @@ WORKFLOW_PATH = WORKFLOW_ROOT / "update-profile.yml"
 def workflow_text() -> str:
     """Read the repository-owned workflow as UTF-8 text."""
     return WORKFLOW_PATH.read_text(encoding="utf-8")
-
-
-def staged_paths(workflow: str) -> tuple[str, ...]:
-    """Extract the explicit paths between git add and the no-change guard."""
-    lines = workflow.splitlines()
-    start = next(index for index, line in enumerate(lines) if "git add --" in line)
-    paths: list[str] = []
-    for line in lines[start + 1 :]:
-        stripped = line.strip()
-        if stripped.startswith("if git diff --cached"):
-            break
-        paths.append(stripped.removesuffix("\\").strip())
-    return tuple(paths)
 
 
 def all_workflows() -> tuple[str, ...]:
@@ -48,7 +33,7 @@ def test_update_workflow_runs_on_schedule_dispatch_and_generator_changes() -> No
     assert "schedule:" in workflow
     assert re.search(r'^\s+- cron: "[^"\n]+"$', workflow, flags=re.MULTILINE)
     assert "workflow_dispatch:" in workflow
-    assert "contents: write" in workflow
+    assert "contents: read" in workflow
     assert "cancel-in-progress: false" in workflow
 
 
@@ -68,14 +53,16 @@ def test_update_workflow_separates_private_read_credential() -> None:
     assert "actions/cache" not in workflow
 
 
-def test_hosted_workflow_preserves_locally_generated_activity_outputs() -> None:
+def test_hosted_workflow_cannot_overwrite_locally_generated_profile_outputs() -> None:
     workflow = workflow_text()
-    hosted_outputs = frozenset({"README.md", "generated/usage.svg"})
 
+    assert "python -m it_activity usage >/dev/null" in workflow
+    assert "persist-credentials: false" in workflow
+    assert "contents: write" not in workflow
     assert "git add ." not in workflow
-    assert frozenset(staged_paths(workflow)) == hosted_outputs
-    assert hosted_outputs < PUBLIC_OUTPUT_PATHS
-    assert not any("commits-" in path or "lines-" in path for path in staged_paths(workflow))
+    assert "git add --" not in workflow
+    assert "git commit" not in workflow
+    assert "git push" not in workflow
 
 
 def test_every_external_action_is_pinned_by_full_commit_sha() -> None:

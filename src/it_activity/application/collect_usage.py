@@ -144,12 +144,14 @@ class CollectUsage:
         for repository in repositories:
             normalized_name = repository.full_name.casefold()
             if repository.repository_id in repository_ids or normalized_name in full_names:
-                raise UsageCollectionError("GitHub вернул повторяющийся репозиторий.")
+                raise UsageCollectionError(
+                    "Источники активности вернули повторяющийся репозиторий."
+                )
             repository_ids.add(repository.repository_id)
             full_names.add(normalized_name)
         expected = {repository.casefold() for repository in expected_repositories}
         if not expected.issubset(full_names):
             raise UsageCollectionError(
-                "GitHub не предоставил доступ ко всем ожидаемым репозиториям."
+                "Источники активности не предоставили доступ ко всем ожидаемым репозиториям."
             )
         return repositories

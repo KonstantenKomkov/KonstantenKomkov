@@ -49,6 +49,10 @@ class StubActivitySource:
         self.operation_calls.append(("changes", repository.repository_id))
         return (FileChange(path="lib/main.dart", additions=2, deletions=1),)
 
+    def list_manifest_markers(self, repository: RepositoryReference) -> Sequence[str]:
+        self.operation_calls.append(("markers", repository.repository_id))
+        return ("pubspec.yaml",)
+
 
 def test_composite_activity_unions_sources_and_routes_unique_repositories() -> None:
     api_repository = RepositoryReference(1, "owner/api", private=False)
@@ -64,8 +68,9 @@ def test_composite_activity_unions_sources_and_routes_unique_repositories() -> N
     until = datetime(2026, 8, 11, tzinfo=timezone.utc)
     assert next(iter(source.iter_commits(local_repository, since, until))).sha == SHA
     assert source.get_file_changes(local_repository, SHA)[0].additions == 2
+    assert source.list_manifest_markers(local_repository) == ("pubspec.yaml",)
     assert api.operation_calls == []
-    assert local.operation_calls == [("commits", 9), ("changes", 9)]
+    assert local.operation_calls == [("commits", 9), ("changes", 9), ("markers", 9)]
 
 
 def test_composite_activity_prefers_api_for_a_repository_also_configured_locally() -> None:

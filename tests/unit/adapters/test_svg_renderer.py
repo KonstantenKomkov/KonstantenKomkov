@@ -101,9 +101,8 @@ def test_usage_rows_embed_branded_and_generic_icons_without_external_assets() ->
 
 
 def test_readme_uses_supported_details_and_opens_only_thirty_days() -> None:
-    readme = SvgProfileRenderer().render(sample_activity_report(), sample_usage_report())[
-        README_PATH
-    ]
+    artifacts = SvgProfileRenderer().render(sample_activity_report(), sample_usage_report())
+    readme = artifacts[README_PATH]
 
     assert readme.count("<details") == 3
     assert readme.count("<details open>") == 1
@@ -116,6 +115,11 @@ def test_readme_uses_supported_details_and_opens_only_thirty_days() -> None:
     assert "generated/lines-365.svg" in readme
     assert "## Языки и технологии за 365 дней" in readme
     assert USAGE_SVG_PATH in readme
+    for path, content in artifacts.items():
+        if not path.endswith(".svg"):
+            continue
+        fingerprint = hashlib.sha256(content.encode("utf-8")).hexdigest()[:12]
+        assert f"({path}?v={fingerprint})" in readme
     assert "<script" not in readme.casefold()
     assert "javascript:" not in readme.casefold()
 
@@ -161,7 +165,7 @@ def test_svg_snapshots_have_expected_hashes() -> None:
     }
 
     assert hashes == {
-        "README.md": "d8adf79c6c6c531e00249ace788ed507ac55d1fc5b0f2959643ccb08c65ac077",
+        "README.md": "82902c83440c1c571c60144073aa1743661fdf9390b1c7d0daa8d427286a30ea",
         "generated/commits-30.svg": (
             "b59ec6b2297e5eb2f1ac226d73dd92a39bd648c73e34690bbee29d494001b0b3"
         ),

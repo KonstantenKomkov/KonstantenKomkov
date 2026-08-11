@@ -4,19 +4,20 @@ from collections.abc import Iterable, Sequence
 from datetime import datetime
 
 from it_activity.domain.activity import CommitMetadata, FileChange, RepositoryReference
-from it_activity.ports.activity_source import ActivitySource, ActivitySourceError
+from it_activity.ports.activity_source import ActivitySourceError
+from it_activity.ports.usage_source import UsageSource
 
 
 class CompositeActivitySource:
     """Expose a deterministic, source-precedence union of repository histories."""
 
-    def __init__(self, sources: Sequence[ActivitySource]) -> None:
+    def __init__(self, sources: Sequence[UsageSource]) -> None:
         if not sources:
             raise ValueError("At least one activity source is required")
         self._sources = tuple(sources)
         self._owner_login: str | None = None
         self._repositories: tuple[RepositoryReference, ...] | None = None
-        self._repository_sources: dict[int, ActivitySource] = {}
+        self._repository_sources: dict[int, UsageSource] = {}
         self._repositories_by_id: dict[int, RepositoryReference] = {}
 
     def list_repositories(self, owner_login: str) -> Sequence[RepositoryReference]:
@@ -31,7 +32,7 @@ class CompositeActivitySource:
 
         repositories_by_id: dict[int, RepositoryReference] = {}
         repository_ids_by_name: dict[str, int] = {}
-        repository_sources: dict[int, ActivitySource] = {}
+        repository_sources: dict[int, UsageSource] = {}
 
         for source in self._sources:
             for repository in source.list_repositories(owner_login):
@@ -81,7 +82,11 @@ class CompositeActivitySource:
         """Read a commit diff from the selected source for a verified repository."""
         return self._source_for(repository).get_file_changes(repository, commit_sha)
 
-    def _source_for(self, repository: RepositoryReference) -> ActivitySource:
+    def list_manifest_markers(self, repository: RepositoryReference) -> Sequence[str]:
+        """Read sanitized manifest markers from the selected source."""
+        return self._source_for(repository).list_manifest_markers(repository)
+
+    def _source_for(self, repository: RepositoryReference) -> UsageSource:
         expected = self._repositories_by_id.get(repository.repository_id)
         source = self._repository_sources.get(repository.repository_id)
         if expected is None or source is None or expected != repository:
