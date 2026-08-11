@@ -51,20 +51,12 @@ def test_update_workflow_separates_private_read_credential() -> None:
 
     assert "IT_ACTIVITY_GITHUB_READ_TOKEN: ${{ secrets.IT_ACTIVITY_GITHUB_READ_TOKEN }}" in workflow
     assert (
-        "IT_ACTIVITY_GITHUB_ADDITIONAL_READ_TOKENS: "
-        "${{ secrets.IT_ACTIVITY_GITHUB_ADDITIONAL_READ_TOKENS }}" in workflow
-    )
-    assert (
         "IT_ACTIVITY_EXPECTED_REPOSITORIES: "
         "${{ secrets.IT_ACTIVITY_EXPECTED_REPOSITORIES }}" in workflow
     )
-    assert (
-        "IT_ACTIVITY_ADDITIONAL_EXPECTED_REPOSITORIES: "
-        "${{ secrets.IT_ACTIVITY_ADDITIONAL_EXPECTED_REPOSITORIES }}" in workflow
-    )
     assert workflow.count("IT_ACTIVITY_GITHUB_READ_TOKEN:") == 1
-    assert workflow.count("IT_ACTIVITY_GITHUB_ADDITIONAL_READ_TOKENS:") == 1
-    assert workflow.count("IT_ACTIVITY_ADDITIONAL_EXPECTED_REPOSITORIES:") == 1
+    assert "IT_ACTIVITY_GITHUB_ADDITIONAL_READ_TOKENS" not in workflow
+    assert "IT_ACTIVITY_ADDITIONAL_EXPECTED_REPOSITORIES" not in workflow
     assert "upload-artifact" not in workflow
     assert "download-artifact" not in workflow
     assert "actions/cache" not in workflow

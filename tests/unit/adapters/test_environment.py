@@ -14,9 +14,6 @@ def test_environment_provider_loads_required_and_optional_values() -> None:
             "IT_ACTIVITY_TIMEZONE": "UTC",
             "IT_ACTIVITY_EXCLUDED_REPOSITORIES": "owner/one, owner/two",
             "IT_ACTIVITY_EXPECTED_REPOSITORIES": "owner/one, owner/private-two",
-            "IT_ACTIVITY_ADDITIONAL_EXPECTED_REPOSITORIES": (
-                "another-owner/private-three, owner/one"
-            ),
         }
     )
 
@@ -27,9 +24,7 @@ def test_environment_provider_loads_required_and_optional_values() -> None:
     )
     assert configuration.timezone == "UTC"
     assert configuration.excluded_repositories == frozenset({"owner/one", "owner/two"})
-    assert configuration.expected_repositories == frozenset(
-        {"owner/one", "owner/private-two", "another-owner/private-three"}
-    )
+    assert configuration.expected_repositories == frozenset({"owner/one", "owner/private-two"})
 
 
 def test_environment_provider_uses_default_timezone() -> None:
@@ -44,14 +39,14 @@ def test_environment_provider_uses_default_timezone() -> None:
     assert configuration.timezone == "Europe/Moscow"
 
 
-def test_environment_provider_extends_expected_repositories_in_process() -> None:
+def test_environment_provider_extends_expected_repositories_at_runtime() -> None:
     configuration = EnvironmentConfigurationProvider(
         {
             "IT_ACTIVITY_GITHUB_LOGIN": "octocat",
             "IT_ACTIVITY_AUTHOR_EMAILS": "owner@example.invalid",
             "IT_ACTIVITY_EXPECTED_REPOSITORIES": "octocat/profile",
         },
-        additional_expected_repositories=(
+        runtime_expected_repositories=(
             "fixture-org/local-private",
             "octocat/profile",
         ),

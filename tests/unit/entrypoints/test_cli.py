@@ -7,10 +7,10 @@ from typing import cast
 import pytest
 
 from it_activity.adapters.composite_activity import CompositeActivitySource
-from it_activity.adapters.composite_github import CompositeGitHubActivitySource
 from it_activity.domain.activity import RepositoryReference
 from it_activity.entrypoints import cli
 from it_activity.entrypoints.cli import main
+from it_activity.ports.activity_source import ActivitySource
 
 
 def test_empty_cli_scenario_prints_help(capsys: pytest.CaptureFixture[str]) -> None:
@@ -89,7 +89,7 @@ def test_activity_assembly_is_unchanged_without_local_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("IT_ACTIVITY_LOCAL_REPOSITORIES", raising=False)
-    github_source = cast(CompositeGitHubActivitySource, object())
+    github_source = cast(ActivitySource, object())
 
     activity_source, _configuration_provider = cli._with_optional_local_activity(github_source)
 
@@ -124,7 +124,7 @@ def test_activity_assembly_adds_and_prefers_runtime_local_repositories(
             return (api_repository,)
 
     monkeypatch.setattr(cli, "LocalGitActivitySource", StubLocalGitActivitySource)
-    github_source = cast(CompositeGitHubActivitySource, StubGitHubActivitySource())
+    github_source = cast(ActivitySource, StubGitHubActivitySource())
 
     activity_source, configuration_provider = cli._with_optional_local_activity(github_source)
 

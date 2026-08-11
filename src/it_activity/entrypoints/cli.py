@@ -8,8 +8,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from it_activity.adapters.composite_activity import CompositeActivitySource
-from it_activity.adapters.composite_github import CompositeGitHubActivitySource
-from it_activity.adapters.credentials import EnvironmentGitHubTokensProvider
+from it_activity.adapters.credentials import EnvironmentGitHubTokenProvider
 from it_activity.adapters.environment import EnvironmentConfigurationProvider
 from it_activity.adapters.filesystem import FilesystemPublicOutputWriter
 from it_activity.adapters.github import GitHubRestActivitySource
@@ -31,19 +30,16 @@ from it_activity.ports.output import PublicOutputError
 from it_activity.ports.rendering import ProfileRenderingError
 
 
-def _build_github_source() -> CompositeGitHubActivitySource:
-    """Build one private-safe source from every independently scoped token."""
-    http_client = UrllibHttpClient()
-    return CompositeGitHubActivitySource(
-        tuple(
-            GitHubRestActivitySource(http_client, token)
-            for token in EnvironmentGitHubTokensProvider().load()
-        )
+def _build_github_source() -> GitHubRestActivitySource:
+    """Build the private-safe source from the configured read-only token."""
+    return GitHubRestActivitySource(
+        UrllibHttpClient(),
+        EnvironmentGitHubTokenProvider().load(),
     )
 
 
 def _with_optional_local_activity(
-    github_source: CompositeGitHubActivitySource,
+    github_source: ActivitySource,
 ) -> tuple[ActivitySource, ConfigurationProvider]:
     """Extend GitHub activity with local clones configured only at runtime."""
     repository_paths = EnvironmentLocalRepositoryPathsProvider().load()
@@ -54,7 +50,7 @@ def _with_optional_local_activity(
     return (
         CompositeActivitySource((local_source, github_source)),
         EnvironmentConfigurationProvider(
-            additional_expected_repositories=local_source.repository_names
+            runtime_expected_repositories=local_source.repository_names
         ),
     )
 

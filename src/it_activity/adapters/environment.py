@@ -14,7 +14,6 @@ AUTHOR_EMAILS_VARIABLE = "IT_ACTIVITY_AUTHOR_EMAILS"
 TIMEZONE_VARIABLE = "IT_ACTIVITY_TIMEZONE"
 EXCLUSIONS_VARIABLE = "IT_ACTIVITY_EXCLUDED_REPOSITORIES"
 EXPECTED_REPOSITORIES_VARIABLE = "IT_ACTIVITY_EXPECTED_REPOSITORIES"
-ADDITIONAL_EXPECTED_REPOSITORIES_VARIABLE = "IT_ACTIVITY_ADDITIONAL_EXPECTED_REPOSITORIES"
 
 
 class EnvironmentConfigurationProvider:
@@ -23,10 +22,10 @@ class EnvironmentConfigurationProvider:
     def __init__(
         self,
         environ: Mapping[str, str] | None = None,
-        additional_expected_repositories: Iterable[str] = (),
+        runtime_expected_repositories: Iterable[str] = (),
     ) -> None:
         self._environ = os.environ if environ is None else environ
-        self._additional_expected_repositories = tuple(additional_expected_repositories)
+        self._runtime_expected_repositories = tuple(runtime_expected_repositories)
 
     def load(self) -> ProfileConfiguration:
         """Load and validate configuration without exposing raw values."""
@@ -37,8 +36,7 @@ class EnvironmentConfigurationProvider:
         expected = frozenset(
             (
                 *self._split(self._required(EXPECTED_REPOSITORIES_VARIABLE)),
-                *self._split(self._environ.get(ADDITIONAL_EXPECTED_REPOSITORIES_VARIABLE, "")),
-                *self._additional_expected_repositories,
+                *self._runtime_expected_repositories,
             )
         )
 
