@@ -184,8 +184,9 @@ class SvgProfileRenderer:
         elements = self._svg_header(
             title=f"Языки и технологии за {MAX_HISTORY_DAYS} дней",
             description=(
-                "Агрегированные доли языков и частота технологий в репозиториях "
-                f"с активностью владельца за последние {MAX_HISTORY_DAYS} дней."
+                "Доли языков: 50 процентов объёма кода по GitHub Linguist и 50 процентов "
+                f"активных дней за последние {MAX_HISTORY_DAYS} дней; технологии показаны "
+                "по частоте репозиториев."
             ),
             height=height,
         )
@@ -195,7 +196,7 @@ class SvgProfileRenderer:
                     '<text class="title" x="28" y="38">Языки и технологии · '
                     f"{MAX_HISTORY_DAYS} дней</text>"
                 ),
-                '<text class="metric" x="28" y="76">Языки</text>',
+                '<text class="metric" x="28" y="76">Языки · 50% код + 50% дни</text>',
                 '<text class="metric" x="382" y="76">Технологии</text>',
             ]
         )
@@ -212,6 +213,10 @@ class SvgProfileRenderer:
             y = 104 + index * 34
             label = self._short_label(language.name, maximum=22)
             bar_width = 320 * language.share_basis_points / 10_000
+            score = (
+                f"{self._format_percentage(language.share_basis_points)} · "
+                f"{language.active_days} дн."
+            )
             elements.extend(
                 [
                     self._usage_icon(
@@ -224,7 +229,7 @@ class SvgProfileRenderer:
                         f"<g><title>{escape(language.name)}</title>"
                         f'<text class="label" x="54" y="{y}">{escape(label)}</text>'
                         f'<text class="label muted" x="348" y="{y}" text-anchor="end">'
-                        f"{self._format_percentage(language.share_basis_points)}</text></g>"
+                        f"{escape(score)}</text></g>"
                     ),
                     f'<rect class="track" x="28" y="{y + 8}" width="320" height="5" rx="2.5" />',
                     (

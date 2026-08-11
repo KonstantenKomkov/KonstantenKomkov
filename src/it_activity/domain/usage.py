@@ -4,6 +4,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
+from it_activity.domain.activity import MAX_HISTORY_DAYS
 from it_activity.domain.linguist_languages import ALLOWED_LINGUIST_LANGUAGES
 
 BASIS_POINTS = 10_000
@@ -85,10 +86,11 @@ class UsageDataError(ValueError):
 
 @dataclass(frozen=True)
 class LanguageUsage:
-    """Public aggregate share for one allowlisted language."""
+    """Public aggregate score and active-day count for one allowlisted language."""
 
     name: str
     share_basis_points: int
+    active_days: int
 
     def __post_init__(self) -> None:
         if self.name not in ALLOWED_LANGUAGES | {OTHER_LANGUAGE}:
@@ -99,6 +101,12 @@ class LanguageUsage:
             or not 0 < self.share_basis_points <= BASIS_POINTS
         ):
             raise UsageDataError("Некорректно задана доля языка.")
+        if (
+            not isinstance(self.active_days, int)
+            or isinstance(self.active_days, bool)
+            or not 0 <= self.active_days <= MAX_HISTORY_DAYS
+        ):
+            raise UsageDataError("Некорректно задано число активных дней языка.")
 
 
 @dataclass(frozen=True)
@@ -164,10 +172,11 @@ def detect_technologies(manifest_markers: Sequence[str]) -> frozenset[str]:
 
 def build_usage_report(
     language_bytes: Mapping[str, int],
+    language_active_days: Mapping[str, int],
     technology_repository_counts: Mapping[str, int],
     repository_count: int,
 ) -> UsageReport:
-    """Build deterministic safe aggregates without exposing raw language names."""
+    """Blend Linguist code volume and annual active days with equal weight."""
     if (
         not isinstance(repository_count, int)
         or isinstance(repository_count, bool)
@@ -189,11 +198,28 @@ def build_usage_report(
         safe_language = language if language in ALLOWED_LANGUAGES else OTHER_LANGUAGE
         safe_language_bytes[safe_language] = safe_language_bytes.get(safe_language, 0) + byte_count
 
-    language_shares = _allocate_basis_points(safe_language_bytes)
+    safe_language_days: dict[str, int] = {}
+    for language, active_days in language_active_days.items():
+        if (
+            language not in ALLOWED_LANGUAGES | {OTHER_LANGUAGE}
+            or not isinstance(active_days, int)
+            or isinstance(active_days, bool)
+            or not 0 <= active_days <= MAX_HISTORY_DAYS
+        ):
+            raise UsageDataError("Некорректно задана активность языка по дням.")
+        if active_days > 0:
+            safe_language_days[language] = active_days
+
+    language_weights = _combined_language_weights(safe_language_bytes, safe_language_days)
+    language_shares = _allocate_basis_points(language_weights)
     languages = tuple(
-        LanguageUsage(name=name, share_basis_points=language_shares[name])
+        LanguageUsage(
+            name=name,
+            share_basis_points=language_shares[name],
+            active_days=safe_language_days.get(name, 0),
+        )
         for name, _ in sorted(
-            safe_language_bytes.items(),
+            language_weights.items(),
             key=lambda item: (-item[1], item[0]),
         )
     )
@@ -225,6 +251,30 @@ def build_usage_report(
         )
 
     return UsageReport(languages=languages, technologies=tuple(technologies))
+
+
+def _combined_language_weights(
+    language_bytes: Mapping[str, int],
+    language_active_days: Mapping[str, int],
+) -> Mapping[str, int]:
+    total_bytes = sum(language_bytes.values())
+    total_active_days = sum(language_active_days.values())
+    names = language_bytes.keys() | language_active_days.keys()
+    if total_bytes == 0:
+        return {name: language_active_days[name] for name in names}
+    if total_active_days == 0:
+        return {name: language_bytes[name] for name in names}
+
+    # All languages share the omitted denominator
+    # 2 * total_bytes * total_active_days. Keeping only the numerator gives an
+    # exact, integer-only 50/50 blend of normalized code volume and active days.
+    return {
+        name: (
+            language_bytes.get(name, 0) * total_active_days
+            + language_active_days.get(name, 0) * total_bytes
+        )
+        for name in names
+    }
 
 
 def _allocate_basis_points(weights: Mapping[str, int]) -> Mapping[str, int]:

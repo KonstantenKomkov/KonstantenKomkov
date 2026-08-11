@@ -4,7 +4,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime
 from typing import Protocol
 
-from it_activity.domain.activity import CommitMetadata, RepositoryReference
+from it_activity.domain.activity import CommitMetadata, FileChange, RepositoryReference
 
 
 class UsageSource(Protocol):
@@ -23,6 +23,13 @@ class UsageSource(Protocol):
 
     def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
         """Return GitHub Linguist byte counts for one repository."""
+
+    def get_file_changes(
+        self,
+        repository: RepositoryReference,
+        commit_sha: str,
+    ) -> Sequence[FileChange]:
+        """Return a complete diff used to identify active language days."""
 
     def list_manifest_markers(self, repository: RepositoryReference) -> Sequence[str]:
         """Return only sanitized markers from the explicit manifest allowlist."""

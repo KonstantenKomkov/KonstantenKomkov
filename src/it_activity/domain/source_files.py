@@ -1,5 +1,6 @@
 """Deterministic source-file classification for line activity."""
 
+from collections.abc import Mapping
 from enum import Enum
 from pathlib import PurePosixPath
 
@@ -18,103 +19,103 @@ class FileCategory(Enum):
     OTHER = "other"
 
 
-_SOURCE_EXTENSIONS = frozenset(
-    {
-        ".asm",
-        ".bash",
-        ".bat",
-        ".c",
-        ".cc",
-        ".cjs",
-        ".clj",
-        ".cljc",
-        ".cljs",
-        ".cmd",
-        ".coffee",
-        ".cpp",
-        ".cs",
-        ".css",
-        ".cxx",
-        ".dart",
-        ".el",
-        ".erl",
-        ".ex",
-        ".exs",
-        ".fish",
-        ".fs",
-        ".fsx",
-        ".go",
-        ".graphql",
-        ".groovy",
-        ".gql",
-        ".h",
-        ".hh",
-        ".hcl",
-        ".hlsl",
-        ".hpp",
-        ".hs",
-        ".html",
-        ".htm",
-        ".java",
-        ".jl",
-        ".js",
-        ".jsx",
-        ".kt",
-        ".kts",
-        ".less",
-        ".lhs",
-        ".lisp",
-        ".lua",
-        ".m",
-        ".mm",
-        ".mjs",
-        ".ml",
-        ".mli",
-        ".nim",
-        ".pas",
-        ".php",
-        ".pl",
-        ".pm",
-        ".ps1",
-        ".py",
-        ".pyi",
-        ".pyx",
-        ".r",
-        ".rb",
-        ".rs",
-        ".sass",
-        ".scala",
-        ".scss",
-        ".sh",
-        ".sol",
-        ".sql",
-        ".svelte",
-        ".swift",
-        ".tcl",
-        ".tf",
-        ".tsx",
-        ".ts",
-        ".vb",
-        ".vbs",
-        ".vue",
-        ".zig",
-        ".zsh",
-    }
-)
+_SOURCE_EXTENSION_LANGUAGES: Mapping[str, str] = {
+    ".asm": "Assembly",
+    ".astro": "Astro",
+    ".bash": "Shell",
+    ".bat": "Batchfile",
+    ".c": "C",
+    ".cc": "C++",
+    ".cjs": "JavaScript",
+    ".clj": "Clojure",
+    ".cljc": "Clojure",
+    ".cljs": "Clojure",
+    ".cmd": "Batchfile",
+    ".coffee": "CoffeeScript",
+    ".cpp": "C++",
+    ".cs": "C#",
+    ".css": "CSS",
+    ".cxx": "C++",
+    ".dart": "Dart",
+    ".el": "Emacs Lisp",
+    ".erl": "Erlang",
+    ".ex": "Elixir",
+    ".exs": "Elixir",
+    ".fish": "fish",
+    ".fs": "F#",
+    ".fsx": "F#",
+    ".go": "Go",
+    ".graphql": "GraphQL",
+    ".groovy": "Groovy",
+    ".gql": "GraphQL",
+    ".h": "C",
+    ".hh": "C++",
+    ".hcl": "HCL",
+    ".hlsl": "HLSL",
+    ".hpp": "C++",
+    ".hs": "Haskell",
+    ".html": "HTML",
+    ".htm": "HTML",
+    ".java": "Java",
+    ".jl": "Julia",
+    ".js": "JavaScript",
+    ".jsx": "JavaScript",
+    ".kt": "Kotlin",
+    ".kts": "Kotlin",
+    ".less": "Less",
+    ".lhs": "Literate Haskell",
+    ".lisp": "Common Lisp",
+    ".lua": "Lua",
+    ".m": "Objective-C",
+    ".mako": "Mako",
+    ".metal": "Metal",
+    ".mjs": "JavaScript",
+    ".ml": "OCaml",
+    ".mli": "OCaml",
+    ".mm": "Objective-C++",
+    ".nim": "Nim",
+    ".pas": "Pascal",
+    ".php": "PHP",
+    ".pl": "Perl",
+    ".pm": "Perl",
+    ".ps1": "PowerShell",
+    ".py": "Python",
+    ".pyi": "Python",
+    ".pyx": "Cython",
+    ".r": "R",
+    ".rb": "Ruby",
+    ".rs": "Rust",
+    ".s": "Assembly",
+    ".sass": "Sass",
+    ".scala": "Scala",
+    ".scss": "SCSS",
+    ".sh": "Shell",
+    ".sol": "Solidity",
+    ".sql": "SQL",
+    ".svelte": "Svelte",
+    ".swift": "Swift",
+    ".tcl": "Tcl",
+    ".tf": "HCL",
+    ".ts": "TypeScript",
+    ".tsx": "TypeScript",
+    ".vb": "Visual Basic .NET",
+    ".vbs": "VBScript",
+    ".vue": "Vue",
+    ".zig": "Zig",
+    ".zsh": "Shell",
+}
 
-_SOURCE_FILENAMES = frozenset(
-    {
-        ".bashrc",
-        ".zshrc",
-        "cmakelists.txt",
-        "dockerfile",
-        "jenkinsfile",
-        "makefile",
-        "procfile",
-        "rakefile",
-        "vagrantfile",
-    }
-)
+_SOURCE_FILENAME_LANGUAGES: Mapping[str, str] = {
+    ".bashrc": "Shell",
+    ".zshrc": "Shell",
+    "cmakelists.txt": "CMake",
+    "dockerfile": "Dockerfile",
+    "jenkinsfile": "Groovy",
+    "makefile": "Makefile",
+    "procfile": "Procfile",
+    "rakefile": "Ruby",
+    "vagrantfile": "Ruby",
+}
 
 _BINARY_EXTENSIONS = frozenset(
     {
@@ -213,6 +214,18 @@ def classify_file(change: FileChange) -> FileCategory:
         return FileCategory.LOCK
     if directories & _DOCUMENTATION_DIRECTORIES or suffix in _DOCUMENTATION_EXTENSIONS:
         return FileCategory.DOCUMENTATION
-    if filename in _SOURCE_FILENAMES or suffix in _SOURCE_EXTENSIONS:
+    if filename in _SOURCE_FILENAME_LANGUAGES or suffix in _SOURCE_EXTENSION_LANGUAGES:
         return FileCategory.SOURCE
     return FileCategory.OTHER
+
+
+def source_language(change: FileChange) -> str | None:
+    """Return a public Linguist language for an included source-file change."""
+    if classify_file(change) is not FileCategory.SOURCE:
+        return None
+    path = PurePosixPath(change.path)
+    filename = path.name.casefold()
+    return _SOURCE_FILENAME_LANGUAGES.get(
+        filename,
+        _SOURCE_EXTENSION_LANGUAGES.get(path.suffix.casefold()),
+    )

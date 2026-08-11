@@ -40,6 +40,7 @@ def test_usage_report_aggregates_unknown_languages_as_other() -> None:
             "TypeScript": 100,
             "Private Fixture Language": 100,
         },
+        {},
         {"Node.js": 2, "Docker": 1},
         repository_count=3,
     )
@@ -60,6 +61,7 @@ def test_language_basis_points_use_deterministic_largest_remainder() -> None:
     report = build_usage_report(
         {"Go": 1, "Python": 1, "Rust": 1},
         {},
+        {},
         repository_count=1,
     )
 
@@ -74,6 +76,7 @@ def test_language_basis_points_use_deterministic_largest_remainder() -> None:
 def test_tiny_positive_language_share_remains_visible() -> None:
     report = build_usage_report(
         {"Go": 1, "Python": 1_000_000_000, "Rust": 1},
+        {},
         {},
         repository_count=1,
     )
@@ -90,6 +93,7 @@ def test_full_pinned_linguist_allowlist_keeps_rare_public_language_name() -> Non
     report = build_usage_report(
         {"1C Enterprise": 10},
         {},
+        {},
         repository_count=1,
     )
 
@@ -98,3 +102,35 @@ def test_full_pinned_linguist_allowlist_keeps_rare_public_language_name() -> Non
     ]
     assert len(ALLOWED_LINGUIST_LANGUAGES) == 825
     assert LINGUIST_LANGUAGES_COMMIT == "46e68a1dec7765b602ec9601693b10e0763436b1"
+
+
+def test_language_score_blends_code_volume_and_active_days_equally() -> None:
+    report = build_usage_report(
+        {"Python": 900, "TypeScript": 100},
+        {"Python": 1, "TypeScript": 9},
+        {},
+        repository_count=1,
+    )
+
+    assert [
+        (item.name, item.share_basis_points, item.active_days) for item in report.languages
+    ] == [
+        ("Python", 5000, 1),
+        ("TypeScript", 5000, 9),
+    ]
+
+
+def test_language_score_keeps_language_changed_but_absent_from_current_tree() -> None:
+    report = build_usage_report(
+        {"Python": 100},
+        {"Python": 1, "TypeScript": 1},
+        {},
+        repository_count=1,
+    )
+
+    assert [
+        (item.name, item.share_basis_points, item.active_days) for item in report.languages
+    ] == [
+        ("Python", 7500, 1),
+        ("TypeScript", 2500, 1),
+    ]

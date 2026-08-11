@@ -304,20 +304,24 @@ def test_get_file_changes_follows_link_header_and_accepts_file_counts() -> None:
             }
         ),
     }
+    http_client = StubHttpClient(routes)
     source = GitHubRestActivitySource(
-        StubHttpClient(routes),
+        http_client,
         "fixture-credential",
         api_url=API_URL,
         page_size=2,
     )
 
     changes = source.get_file_changes(repository, SHA_A)
+    cached_changes = source.get_file_changes(repository, SHA_A.upper())
 
     assert [(change.additions, change.deletions, change.binary) for change in changes] == [
         (10, 2, False),
         (5, 1, False),
         (0, 0, True),
     ]
+    assert cached_changes == changes
+    assert len(http_client.requests) == 2
     assert "private_name.py" not in repr(changes)
     assert "private.png" not in repr(changes)
 

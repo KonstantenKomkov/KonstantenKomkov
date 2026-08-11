@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from it_activity.application.collect_usage import CollectUsage, UsageCollectionError
-from it_activity.domain.activity import CommitMetadata, RepositoryReference
+from it_activity.domain.activity import CommitMetadata, FileChange, RepositoryReference
 from it_activity.domain.configuration import ProfileConfiguration
 
 SHA_A = "a" * 40
@@ -46,14 +46,17 @@ class FakeUsageSource:
         commits: Mapping[int, Sequence[CommitMetadata]],
         languages: Mapping[int, Mapping[str, int]],
         markers: Mapping[int, Sequence[str]],
+        changes: Mapping[tuple[int, str], Sequence[FileChange]] | None = None,
     ) -> None:
         self._repositories = repositories
         self._commits = commits
         self._languages = languages
         self._markers = markers
+        self._changes = {} if changes is None else changes
         self.history_calls: list[tuple[int, datetime, datetime]] = []
         self.language_calls: list[int] = []
         self.manifest_calls: list[int] = []
+        self.file_change_calls: list[tuple[int, str]] = []
 
     def list_repositories(self, owner_login: str) -> Sequence[RepositoryReference]:
         assert owner_login == "octocat"
@@ -71,6 +74,15 @@ class FakeUsageSource:
     def get_language_bytes(self, repository: RepositoryReference) -> Mapping[str, int]:
         self.language_calls.append(repository.repository_id)
         return self._languages[repository.repository_id]
+
+    def get_file_changes(
+        self,
+        repository: RepositoryReference,
+        commit_sha: str,
+    ) -> Sequence[FileChange]:
+        key = (repository.repository_id, commit_sha)
+        self.file_change_calls.append(key)
+        return self._changes.get(key, ())
 
     def list_manifest_markers(self, repository: RepositoryReference) -> Sequence[str]:
         self.manifest_calls.append(repository.repository_id)
@@ -127,6 +139,10 @@ def test_collect_usage_uses_repositories_with_owner_activity_during_last_year() 
             5: ("go.mod",),
             6: ("Gemfile",),
         },
+        {
+            (1, SHA_A): (FileChange("src/app.py", additions=3, deletions=1),),
+            (2, SHA_B): (FileChange("service/worker.py", additions=1, deletions=0),),
+        },
     )
     configuration = ProfileConfiguration(
         github_login="octocat",
@@ -141,10 +157,12 @@ def test_collect_usage_uses_repositories_with_owner_activity_during_last_year() 
         FixedClock(now),
     ).execute()
 
-    assert [(item.name, item.share_basis_points) for item in report.languages] == [
-        ("Python", 5000),
-        ("JavaScript", 2500),
-        ("Other", 2500),
+    assert [
+        (item.name, item.share_basis_points, item.active_days) for item in report.languages
+    ] == [
+        ("Python", 7500, 2),
+        ("JavaScript", 1250, 0),
+        ("Other", 1250, 0),
     ]
     assert [
         (item.name, item.repository_count, item.repository_share_basis_points)
@@ -158,6 +176,7 @@ def test_collect_usage_uses_repositories_with_owner_activity_during_last_year() 
     assert all(since == cutoff and until == now for _, since, until in source.history_calls)
     assert source.language_calls == [2, 1]
     assert source.manifest_calls == [2, 1]
+    assert source.file_change_calls == [(2, SHA_B), (1, SHA_A)]
     assert "Private Fixture Language" not in repr(report)
     assert "private-fixture" not in repr(report)
     assert "package.json" not in repr(report)
@@ -190,6 +209,48 @@ def test_collect_usage_rejects_missing_expected_access_without_private_data() ->
     assert source.history_calls == []
     assert source.language_calls == []
     assert source.manifest_calls == []
+    assert source.file_change_calls == []
+
+
+def test_collect_usage_deduplicates_sha_and_language_days_globally() -> None:
+    now = datetime(2026, 8, 10, 9, 0, tzinfo=timezone.utc)
+    repositories = (
+        RepositoryReference(1, "octocat/first-fixture", private=False),
+        RepositoryReference(2, "octocat/second-fixture", private=True),
+    )
+    source = FakeUsageSource(
+        repositories,
+        {
+            1: (metadata(SHA_A, now), metadata(SHA_B, now + timedelta(minutes=1))),
+            2: (metadata(SHA_A, now),),
+        },
+        {
+            1: {"Python": 100},
+            2: {"JavaScript": 100},
+        },
+        {1: (), 2: ()},
+        {
+            (1, SHA_A): (FileChange("src/first.py", additions=1, deletions=0),),
+            (1, SHA_B): (FileChange("src/second.py", additions=1, deletions=0),),
+        },
+    )
+    configuration = ProfileConfiguration(
+        github_login="octocat",
+        author_emails=frozenset({"owner@example.invalid"}),
+        expected_repositories=frozenset(repository.full_name for repository in repositories),
+    )
+
+    report = CollectUsage(
+        StaticConfigurationProvider(configuration),
+        source,
+        FixedClock(now + timedelta(minutes=2)),
+    ).execute()
+
+    assert [
+        (item.name, item.share_basis_points, item.active_days) for item in report.languages
+    ] == [("Python", 10_000, 1)]
+    assert source.file_change_calls == [(1, SHA_A), (1, SHA_B)]
+    assert source.language_calls == [1]
 
 
 def test_collect_usage_rejects_conflicting_duplicate_sha_without_private_data() -> None:

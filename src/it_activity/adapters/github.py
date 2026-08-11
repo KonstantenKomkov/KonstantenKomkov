@@ -70,6 +70,10 @@ class GitHubRestActivitySource:
             tuple[RepositoryReference, datetime, datetime],
             tuple[CommitMetadata, ...],
         ] = {}
+        self._file_change_cache: dict[
+            tuple[RepositoryReference, str],
+            tuple[FileChange, ...],
+        ] = {}
         self._confirmed_empty_repository_ids: set[int] = set()
 
     def list_repositories(self, owner_login: str) -> Sequence[RepositoryReference]:
@@ -232,6 +236,10 @@ class GitHubRestActivitySource:
         commit_sha: str,
     ) -> Sequence[FileChange]:
         """Return all file changes, failing if GitHub might have truncated them."""
+        cache_key = (repository, commit_sha.casefold())
+        cached = self._file_change_cache.get(cache_key)
+        if cached is not None:
+            return cached
         repository_path = quote(repository.full_name, safe="/")
         commit_path = quote(commit_sha, safe="")
         path = f"/repos/{repository_path}/commits/{commit_path}"
@@ -279,7 +287,9 @@ class GitHubRestActivitySource:
         else:
             raise GitHubApiError("GitHub превысил допустимое число страниц файлов.")
 
-        return tuple(changes)
+        result = tuple(changes)
+        self._file_change_cache[cache_key] = result
+        return result
 
     def _get_paginated_array(
         self,

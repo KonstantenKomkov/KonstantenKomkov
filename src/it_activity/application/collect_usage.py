@@ -1,9 +1,10 @@
 """Use case for aggregating public-safe language and technology usage."""
 
-from datetime import datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from it_activity.domain.activity import MAX_HISTORY_DAYS, RepositoryReference
+from it_activity.domain.source_files import source_language
 from it_activity.domain.usage import (
     UsageDataError,
     UsageReport,
@@ -58,11 +59,12 @@ class CollectUsage:
             )
             if repository.full_name.casefold() not in excluded
         )
-        included = self._repositories_active_during_year(
+        included, language_days = self._annual_repository_and_language_activity(
             candidates,
             configuration.author_emails,
             since,
             until,
+            configured_timezone,
         )
         language_bytes: dict[str, int] = {}
         technology_counts: dict[str, int] = {}
@@ -87,19 +89,26 @@ class CollectUsage:
                 technology_counts[technology] = technology_counts.get(technology, 0) + 1
 
         try:
-            return build_usage_report(language_bytes, technology_counts, len(included))
+            return build_usage_report(
+                language_bytes,
+                {language: len(days) for language, days in language_days.items()},
+                technology_counts,
+                len(included),
+            )
         except UsageDataError as error:
             raise UsageCollectionError(str(error)) from None
 
-    def _repositories_active_during_year(
+    def _annual_repository_and_language_activity(
         self,
         repositories: tuple[RepositoryReference, ...],
         author_emails: frozenset[str],
         since: datetime,
         until: datetime,
-    ) -> tuple[RepositoryReference, ...]:
+        configured_timezone: ZoneInfo,
+    ) -> tuple[tuple[RepositoryReference, ...], dict[str, set[date]]]:
         active: list[RepositoryReference] = []
         seen_commits: dict[str, tuple[str, datetime]] = {}
+        language_days: dict[str, set[date]] = {}
 
         for repository in repositories:
             if repository.empty:
@@ -108,8 +117,12 @@ class CollectUsage:
             for commit in self._usage_source.iter_commits(repository, since, until):
                 identity = (commit.author_email, commit.authored_at)
                 previous_identity = seen_commits.get(commit.sha)
-                if previous_identity is not None and previous_identity != identity:
-                    raise UsageCollectionError("Одинаковый SHA содержит противоречивые метаданные.")
+                if previous_identity is not None:
+                    if previous_identity != identity:
+                        raise UsageCollectionError(
+                            "Одинаковый SHA содержит противоречивые метаданные."
+                        )
+                    continue
                 seen_commits[commit.sha] = identity
 
                 authored_at = commit.authored_at.astimezone(timezone.utc)
@@ -117,10 +130,19 @@ class CollectUsage:
                     continue
                 if commit.author_email in author_emails:
                     owner_activity = True
+                    local_day = commit.authored_at.astimezone(configured_timezone).date()
+                    commit_languages = {
+                        language
+                        for change in self._usage_source.get_file_changes(repository, commit.sha)
+                        if change.additions + change.deletions > 0
+                        if (language := source_language(change)) is not None
+                    }
+                    for language in commit_languages:
+                        language_days.setdefault(language, set()).add(local_day)
             if owner_activity:
                 active.append(repository)
 
-        return tuple(active)
+        return tuple(active), language_days
 
     def _validated_repositories(
         self,

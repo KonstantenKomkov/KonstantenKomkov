@@ -154,6 +154,13 @@ class LocalUsageSource:
         assert repository == self._reference
         return {"Python": 300, "Private Internal DSL": 100}
 
+    def get_file_changes(
+        self,
+        repository: RepositoryReference,
+        commit_sha: str,
+    ) -> Sequence[FileChange]:
+        return self._activity_source.get_file_changes(repository, commit_sha)
+
     def list_manifest_markers(self, repository: RepositoryReference) -> Sequence[str]:
         assert repository == self._reference
         paths = run_git(
@@ -271,9 +278,10 @@ def test_local_git_activity_aggregation(local_profile_fixture: LocalProfileFixtu
 def test_local_git_usage_aggregation(local_profile_fixture: LocalProfileFixture) -> None:
     usage = local_profile_fixture.usage_provider.execute()
 
-    assert [(item.name, item.share_basis_points) for item in usage.languages] == [
-        ("Python", 7500),
-        ("Other", 2500),
+    assert [(item.name, item.share_basis_points, item.active_days) for item in usage.languages] == [
+        ("Python", 7083, 2),
+        ("TypeScript", 1667, 1),
+        ("Other", 1250, 0),
     ]
     assert [(item.name, item.repository_count) for item in usage.technologies] == [("Python", 1)]
 

@@ -3,7 +3,8 @@
 import pytest
 
 from it_activity.domain.activity import FileChange
-from it_activity.domain.source_files import FileCategory, classify_file
+from it_activity.domain.linguist_languages import ALLOWED_LINGUIST_LANGUAGES
+from it_activity.domain.source_files import FileCategory, classify_file, source_language
 
 
 @pytest.mark.parametrize(
@@ -35,3 +36,27 @@ def test_classify_file(
     change = FileChange(path=path, additions=1, deletions=1, binary=binary)
 
     assert classify_file(change) is expected
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    [
+        ("src/app.py", "Python"),
+        ("web/component.tsx", "TypeScript"),
+        ("ios/bridge.mm", "Objective-C++"),
+        ("shaders/view.metal", "Metal"),
+        ("Makefile", "Makefile"),
+        ("Jenkinsfile", "Groovy"),
+        ("generated/client.py", None),
+        ("docs/example.js", None),
+        ("assets/data.json", None),
+    ],
+)
+def test_source_language_returns_only_allowlisted_public_names(
+    path: str,
+    expected: str | None,
+) -> None:
+    language = source_language(FileChange(path=path, additions=1, deletions=0))
+
+    assert language == expected
+    assert language is None or language in ALLOWED_LINGUIST_LANGUAGES
