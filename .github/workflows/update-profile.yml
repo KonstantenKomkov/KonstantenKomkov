@@ -53,12 +53,6 @@ jobs:
           set -euo pipefail
           git add -- \
             README.md \
-            generated/commits-7.svg \
-            generated/commits-30.svg \
-            generated/commits-365.svg \
-            generated/lines-7.svg \
-            generated/lines-30.svg \
-            generated/lines-365.svg \
             generated/usage.svg
           if git diff --cached --quiet; then
             echo "Публичные агрегаты не изменились."

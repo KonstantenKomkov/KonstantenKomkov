@@ -68,11 +68,14 @@ def test_update_workflow_separates_private_read_credential() -> None:
     assert "actions/cache" not in workflow
 
 
-def test_update_workflow_pins_actions_and_stages_only_public_outputs() -> None:
+def test_hosted_workflow_preserves_locally_generated_activity_outputs() -> None:
     workflow = workflow_text()
+    hosted_outputs = frozenset({"README.md", "generated/usage.svg"})
+
     assert "git add ." not in workflow
-    assert frozenset(staged_paths(workflow)) == PUBLIC_OUTPUT_PATHS
-    assert len(staged_paths(workflow)) == len(PUBLIC_OUTPUT_PATHS)
+    assert frozenset(staged_paths(workflow)) == hosted_outputs
+    assert hosted_outputs < PUBLIC_OUTPUT_PATHS
+    assert not any("commits-" in path or "lines-" in path for path in staged_paths(workflow))
 
 
 def test_every_external_action_is_pinned_by_full_commit_sha() -> None:
