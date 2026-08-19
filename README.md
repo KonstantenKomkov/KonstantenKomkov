@@ -3,27 +3,27 @@
 <details>
 <summary><strong>Последние 7 дней</strong></summary>
 
-![Коммиты за 7 дней](generated/commits-7.svg?v=7003c1953253)
+![Коммиты за 7 дней](generated/commits-7.svg?v=c0dd58835c49)
 
-![Строки кода за 7 дней](generated/lines-7.svg?v=c3f8d080a711)
+![Строки кода за 7 дней](generated/lines-7.svg?v=fab356a72f50)
 
 </details>
 
 <details open>
 <summary><strong>Последние 30 дней</strong></summary>
 
-![Коммиты за 30 дней](generated/commits-30.svg?v=cd7b2d6910b3)
+![Коммиты за 30 дней](generated/commits-30.svg?v=91eeedf4c2e9)
 
-![Строки кода за 30 дней](generated/lines-30.svg?v=8e1af77c0212)
+![Строки кода за 30 дней](generated/lines-30.svg?v=3c68e38b54c3)
 
 </details>
 
 <details>
 <summary><strong>Последние 365 дней</strong></summary>
 
-![Коммиты за 365 дней](generated/commits-365.svg?v=5422d906bd80)
+![Коммиты за 365 дней](generated/commits-365.svg?v=dce77be49b0c)
 
-![Строки кода за 365 дней](generated/lines-365.svg?v=7306ffb00f4e)
+![Строки кода за 365 дней](generated/lines-365.svg?v=95cc500efb90)
 
 </details>
 
