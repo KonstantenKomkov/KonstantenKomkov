@@ -276,11 +276,16 @@ class LocalGitActivitySource:
             if self._uses_partial_clone(resolved_path):
                 raise ActivitySourceError("Локальная история Git является неполной.")
 
-            remote = self._decode_single_line(
-                self._run_git(resolved_path, "remote", "get-url", "origin"),
-                "У локального репозитория нет безопасного Git origin.",
-            )
-            full_name = self._repository_name(remote)
+            if self._has_origin(resolved_path):
+                remote = self._decode_single_line(
+                    self._run_git(resolved_path, "remote", "get-url", "origin"),
+                    "У локального репозитория нет безопасного Git origin.",
+                )
+                full_name = self._repository_name(remote)
+            else:
+                # A clone without origin is local-only: count its commits without
+                # mapping it to any hosted repository.
+                full_name = self._local_only_repository_name(resolved_path)
             normalized_name = full_name.casefold()
             repository_id = self._repository_id(normalized_name)
             if normalized_name in names or repository_id in identifiers:
@@ -342,6 +347,10 @@ class LocalGitActivitySource:
             ):
                 return True
         return False
+
+    def _has_origin(self, repository: Path) -> bool:
+        remotes = self._run_git(repository, "remote").splitlines()
+        return b"origin" in (remote.strip() for remote in remotes)
 
     def _run_git(self, repository: Path, *arguments: str) -> bytes:
         environment = {
@@ -455,6 +464,12 @@ class LocalGitActivitySource:
         canonical_remote = f"{host}/{'/'.join(components)}"
         opaque_name = blake2b(canonical_remote.encode("utf-8"), digest_size=16).hexdigest()
         return f"local/{opaque_name}"
+
+    @staticmethod
+    def _local_only_repository_name(repository: Path) -> str:
+        """Return an opaque identity for a clone that has no origin remote."""
+        digest = blake2b(b"path:" + os.fsencode(repository), digest_size=16).hexdigest()
+        return f"local/{digest}"
 
     @staticmethod
     def _repository_id(normalized_name: str) -> int:

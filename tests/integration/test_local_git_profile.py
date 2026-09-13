@@ -317,6 +317,37 @@ def test_local_git_activity_uses_an_opaque_identity_for_another_safe_git_host(
     ]
 
 
+def test_local_git_activity_counts_local_commits_of_a_repository_without_origin(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "private-local-only-repository"
+    repository.mkdir()
+    run_git(repository, "init", "--quiet", "--initial-branch=main")
+    write_fixture(repository, PRIVATE_PATH, f"{PRIVATE_SOURCE}\n")
+    authored_at = datetime(2026, 8, 8, 10, 0, tzinfo=timezone.utc)
+    commit_fixture(repository, PRIVATE_MESSAGE, PRIVATE_EMAIL, authored_at)
+    source = LocalGitActivitySource((repository,))
+
+    reference = source.list_repositories("octocat")[0]
+    commits = tuple(
+        source.iter_commits(
+            reference,
+            datetime(2026, 8, 1, tzinfo=timezone.utc),
+            datetime(2026, 8, 11, tzinfo=timezone.utc),
+        )
+    )
+
+    assert reference.full_name.startswith("local/")
+    assert "private" not in reference.full_name
+    assert str(repository) not in reference.full_name
+    assert source.repository_names == frozenset({reference.full_name})
+    assert [(commit.authored_at, commit.author_email) for commit in commits] == [
+        (authored_at, PRIVATE_EMAIL)
+    ]
+    changes = source.get_file_changes(reference, commits[0].sha)
+    assert [(change.additions, change.deletions) for change in changes] == [(1, 0)]
+
+
 def test_local_git_activity_rejects_missing_path_without_exposing_it(tmp_path: Path) -> None:
     missing_path = tmp_path / "private-missing-repository"
 
