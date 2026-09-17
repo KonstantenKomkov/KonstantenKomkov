@@ -17,6 +17,7 @@ from it_activity.adapters.local_git import (
     EnvironmentLocalRepositoryPathsProvider,
     LocalGitActivitySource,
 )
+from it_activity.adapters.profile_intro import FilesystemProfileIntroSource
 from it_activity.adapters.svg_renderer import SvgProfileRenderer
 from it_activity.adapters.system_clock import SystemClock
 from it_activity.application.collect_activity import CollectActivity, CollectionError
@@ -26,6 +27,7 @@ from it_activity.application.validate_configuration import ValidateConfiguration
 from it_activity.domain.configuration import ConfigurationError
 from it_activity.ports.activity_source import ActivitySourceError
 from it_activity.ports.configuration import ConfigurationProvider
+from it_activity.ports.intro import ProfileIntroSourceError
 from it_activity.ports.output import PublicOutputError
 from it_activity.ports.rendering import ProfileRenderingError
 from it_activity.ports.usage_source import UsageSource
@@ -184,7 +186,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     usage_source=activity_source,
                     clock=clock,
                 ),
-                renderer=SvgProfileRenderer(),
+                renderer=SvgProfileRenderer(FilesystemProfileIntroSource(Path.cwd()).load()),
                 output_writer=FilesystemPublicOutputWriter(Path.cwd()),
             ).execute()
         except (
@@ -192,6 +194,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             CollectionError,
             ConfigurationError,
             ProfileGenerationError,
+            ProfileIntroSourceError,
             ProfileRenderingError,
             PublicOutputError,
             UsageCollectionError,

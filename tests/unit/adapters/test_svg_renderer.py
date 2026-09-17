@@ -6,7 +6,12 @@ from datetime import date, timedelta
 
 from it_activity.adapters.svg_renderer import SvgProfileRenderer
 from it_activity.domain.activity import ActivityReport, DailyActivity
-from it_activity.domain.profile import PUBLIC_OUTPUT_PATHS, README_PATH, USAGE_SVG_PATH
+from it_activity.domain.profile import (
+    PUBLIC_OUTPUT_PATHS,
+    README_PATH,
+    USAGE_SVG_PATH,
+    ProfileIntro,
+)
 from it_activity.domain.usage import UsageReport, build_usage_report
 
 
@@ -186,3 +191,25 @@ def test_svg_snapshots_have_expected_hashes() -> None:
         ),
         "generated/usage.svg": "9e6bd02dae66451df6449dfd351a63655886ff67d3ee0b15329945ccbb043f08",
     }
+
+
+def test_intro_is_rendered_above_the_generated_charts() -> None:
+    intro = ProfileIntro(markdown="## Hello 👋\n\nA few words about me.")
+
+    readme = SvgProfileRenderer(intro).render(sample_activity_report(), sample_usage_report())[
+        README_PATH
+    ]
+
+    header_end = readme.index("\n") + 1
+    assert readme[header_end:].lstrip("\n").startswith("## Hello 👋\n\nA few words about me.\n")
+    assert readme.index("A few words about me.") < readme.index("<details")
+
+
+def test_readme_without_intro_matches_the_default_rendering() -> None:
+    activity = sample_activity_report()
+    usage = sample_usage_report()
+
+    with_empty_intro = SvgProfileRenderer(ProfileIntro.empty()).render(activity, usage)
+    without_intro = SvgProfileRenderer().render(activity, usage)
+
+    assert with_empty_intro == without_intro
