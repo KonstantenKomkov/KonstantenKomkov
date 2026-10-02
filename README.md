@@ -9,30 +9,30 @@
 <details>
 <summary><strong>Последние 7 дней</strong></summary>
 
-![Коммиты за 7 дней](generated/commits-7.svg?v=07acfd907d7e)
+![Коммиты за 7 дней](generated/commits-7.svg?v=a084b1354db1)
 
-![Строки кода за 7 дней](generated/lines-7.svg?v=db41c3ba672f)
+![Строки кода за 7 дней](generated/lines-7.svg?v=4ffd83e7677c)
 
 </details>
 
 <details open>
 <summary><strong>Последние 30 дней</strong></summary>
 
-![Коммиты за 30 дней](generated/commits-30.svg?v=346b8338e724)
+![Коммиты за 30 дней](generated/commits-30.svg?v=c9b0f20e68c7)
 
-![Строки кода за 30 дней](generated/lines-30.svg?v=4a13d975e74a)
+![Строки кода за 30 дней](generated/lines-30.svg?v=cb860c1e0acb)
 
 </details>
 
 <details>
 <summary><strong>Последние 365 дней</strong></summary>
 
-![Коммиты за 365 дней](generated/commits-365.svg?v=cd5814711cd1)
+![Коммиты за 365 дней](generated/commits-365.svg?v=baac97aed3a9)
 
-![Строки кода за 365 дней](generated/lines-365.svg?v=28d218dda312)
+![Строки кода за 365 дней](generated/lines-365.svg?v=fac6d306c456)
 
 </details>
 
 ## Языки и технологии за 365 дней
 
-![Языки и технологии за 365 дней](generated/usage.svg?v=7aff57bf356f)
+![Языки и технологии за 365 дней](generated/usage.svg?v=992237f5d546)
