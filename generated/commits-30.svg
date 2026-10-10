@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" width="720" height="260" style="max-width:100%;height:auto" role="img" aria-labelledby="title description" preserveAspectRatio="xMidYMid meet">
 <title id="title">Коммиты за 30 дней</title>
-<desc id="description">Всего 256 коммитов за выбранный период.</desc>
+<desc id="description">Всего 280 коммитов за выбранный период.</desc>
 <style>text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1f2328; }
 .surface { fill: #ffffff; stroke: #d0d7de; }
 .title { font-size: 21px; font-weight: 650; }
@@ -37,7 +37,7 @@
 }</style>
 <rect class="surface" x="1" y="1" width="718" height="258" rx="12" />
 <text class="title" x="28" y="38">Коммиты</text>
-<text class="metric" x="28" y="64">256 за 30 дней</text>
+<text class="metric" x="28" y="64">280 за 30 дней</text>
 <text class="label muted" x="696" y="80" text-anchor="end">коммитов/день</text>
 <line class="grid" x1="54" y1="88" x2="696" y2="88" />
 <text class="muted" font-size="10" x="46" y="91.5" text-anchor="end">26</text>
@@ -49,36 +49,36 @@
 <text class="muted" font-size="10" x="46" y="180.65" text-anchor="end">7</text>
 <line class="grid" x1="54" y1="210" x2="696" y2="210" />
 <text class="muted" font-size="10" x="46" y="213.5" text-anchor="end">0</text>
-<rect class="commit-bar" x="57" y="144.31" width="15.41" height="65.69" rx="1"><title>2026-09-09: 14</title></rect>
-<rect class="commit-bar" x="78.4" y="205.31" width="15.41" height="4.69" rx="1"><title>2026-09-10: 1</title></rect>
-<rect class="commit-bar" x="99.8" y="205.31" width="15.41" height="4.69" rx="1"><title>2026-09-11: 1</title></rect>
-<rect class="commit-bar" x="121.2" y="200.62" width="15.41" height="9.38" rx="1"><title>2026-09-12: 2</title></rect>
-<rect class="commit-bar" x="142.6" y="200.62" width="15.41" height="9.38" rx="1"><title>2026-09-13: 2</title></rect>
-<rect class="commit-bar" x="164" y="163.08" width="15.41" height="46.92" rx="1"><title>2026-09-14: 10</title></rect>
-<rect class="commit-bar" x="185.4" y="163.08" width="15.41" height="46.92" rx="1"><title>2026-09-15: 10</title></rect>
-<rect class="commit-bar" x="206.8" y="167.77" width="15.41" height="42.23" rx="1"><title>2026-09-16: 9</title></rect>
-<rect class="commit-bar" x="228.2" y="153.69" width="15.41" height="56.31" rx="1"><title>2026-09-17: 12</title></rect>
-<rect class="commit-bar" x="249.6" y="200.62" width="15.41" height="9.38" rx="1"><title>2026-09-18: 2</title></rect>
-<rect class="commit-bar" x="271" y="195.92" width="15.41" height="14.08" rx="1"><title>2026-09-19: 3</title></rect>
-<rect class="commit-bar" x="292.4" y="177.15" width="15.41" height="32.85" rx="1"><title>2026-09-20: 7</title></rect>
-<rect class="commit-bar" x="313.8" y="102.08" width="15.41" height="107.92" rx="1"><title>2026-09-21: 23</title></rect>
-<rect class="commit-bar" x="335.2" y="88" width="15.41" height="122" rx="1"><title>2026-09-22: 26</title></rect>
-<rect class="commit-bar" x="356.6" y="144.31" width="15.41" height="65.69" rx="1"><title>2026-09-23: 14</title></rect>
-<rect class="commit-bar" x="378" y="167.77" width="15.41" height="42.23" rx="1"><title>2026-09-24: 9</title></rect>
-<rect class="commit-bar" x="399.4" y="116.15" width="15.41" height="93.85" rx="1"><title>2026-09-25: 20</title></rect>
-<rect class="commit-bar" x="420.8" y="210" width="15.41" height="0" rx="1"><title>2026-09-26: 0</title></rect>
-<rect class="commit-bar" x="442.2" y="158.38" width="15.41" height="51.62" rx="1"><title>2026-09-27: 11</title></rect>
-<rect class="commit-bar" x="463.6" y="144.31" width="15.41" height="65.69" rx="1"><title>2026-09-28: 14</title></rect>
-<rect class="commit-bar" x="485" y="125.54" width="15.41" height="84.46" rx="1"><title>2026-09-29: 18</title></rect>
-<rect class="commit-bar" x="506.4" y="200.62" width="15.41" height="9.38" rx="1"><title>2026-09-30: 2</title></rect>
-<rect class="commit-bar" x="527.8" y="172.46" width="15.41" height="37.54" rx="1"><title>2026-10-01: 8</title></rect>
-<rect class="commit-bar" x="549.2" y="210" width="15.41" height="0" rx="1"><title>2026-10-02: 0</title></rect>
-<rect class="commit-bar" x="570.6" y="191.23" width="15.41" height="18.77" rx="1"><title>2026-10-03: 4</title></rect>
-<rect class="commit-bar" x="592" y="163.08" width="15.41" height="46.92" rx="1"><title>2026-10-04: 10</title></rect>
-<rect class="commit-bar" x="613.4" y="167.77" width="15.41" height="42.23" rx="1"><title>2026-10-05: 9</title></rect>
-<rect class="commit-bar" x="634.8" y="191.23" width="15.41" height="18.77" rx="1"><title>2026-10-06: 4</title></rect>
-<rect class="commit-bar" x="656.2" y="181.85" width="15.41" height="28.15" rx="1"><title>2026-10-07: 6</title></rect>
-<rect class="commit-bar" x="677.6" y="186.54" width="15.41" height="23.46" rx="1"><title>2026-10-08: 5</title></rect>
-<text class="label muted" x="54" y="238">09.09.2026</text>
-<text class="label muted" x="696" y="238" text-anchor="end">08.10.2026</text>
+<rect class="commit-bar" x="57" y="205.31" width="15.41" height="4.69" rx="1"><title>2026-09-11: 1</title></rect>
+<rect class="commit-bar" x="78.4" y="200.62" width="15.41" height="9.38" rx="1"><title>2026-09-12: 2</title></rect>
+<rect class="commit-bar" x="99.8" y="200.62" width="15.41" height="9.38" rx="1"><title>2026-09-13: 2</title></rect>
+<rect class="commit-bar" x="121.2" y="163.08" width="15.41" height="46.92" rx="1"><title>2026-09-14: 10</title></rect>
+<rect class="commit-bar" x="142.6" y="163.08" width="15.41" height="46.92" rx="1"><title>2026-09-15: 10</title></rect>
+<rect class="commit-bar" x="164" y="167.77" width="15.41" height="42.23" rx="1"><title>2026-09-16: 9</title></rect>
+<rect class="commit-bar" x="185.4" y="153.69" width="15.41" height="56.31" rx="1"><title>2026-09-17: 12</title></rect>
+<rect class="commit-bar" x="206.8" y="200.62" width="15.41" height="9.38" rx="1"><title>2026-09-18: 2</title></rect>
+<rect class="commit-bar" x="228.2" y="195.92" width="15.41" height="14.08" rx="1"><title>2026-09-19: 3</title></rect>
+<rect class="commit-bar" x="249.6" y="177.15" width="15.41" height="32.85" rx="1"><title>2026-09-20: 7</title></rect>
+<rect class="commit-bar" x="271" y="102.08" width="15.41" height="107.92" rx="1"><title>2026-09-21: 23</title></rect>
+<rect class="commit-bar" x="292.4" y="88" width="15.41" height="122" rx="1"><title>2026-09-22: 26</title></rect>
+<rect class="commit-bar" x="313.8" y="144.31" width="15.41" height="65.69" rx="1"><title>2026-09-23: 14</title></rect>
+<rect class="commit-bar" x="335.2" y="167.77" width="15.41" height="42.23" rx="1"><title>2026-09-24: 9</title></rect>
+<rect class="commit-bar" x="356.6" y="116.15" width="15.41" height="93.85" rx="1"><title>2026-09-25: 20</title></rect>
+<rect class="commit-bar" x="378" y="210" width="15.41" height="0" rx="1"><title>2026-09-26: 0</title></rect>
+<rect class="commit-bar" x="399.4" y="158.38" width="15.41" height="51.62" rx="1"><title>2026-09-27: 11</title></rect>
+<rect class="commit-bar" x="420.8" y="144.31" width="15.41" height="65.69" rx="1"><title>2026-09-28: 14</title></rect>
+<rect class="commit-bar" x="442.2" y="125.54" width="15.41" height="84.46" rx="1"><title>2026-09-29: 18</title></rect>
+<rect class="commit-bar" x="463.6" y="200.62" width="15.41" height="9.38" rx="1"><title>2026-09-30: 2</title></rect>
+<rect class="commit-bar" x="485" y="172.46" width="15.41" height="37.54" rx="1"><title>2026-10-01: 8</title></rect>
+<rect class="commit-bar" x="506.4" y="210" width="15.41" height="0" rx="1"><title>2026-10-02: 0</title></rect>
+<rect class="commit-bar" x="527.8" y="191.23" width="15.41" height="18.77" rx="1"><title>2026-10-03: 4</title></rect>
+<rect class="commit-bar" x="549.2" y="163.08" width="15.41" height="46.92" rx="1"><title>2026-10-04: 10</title></rect>
+<rect class="commit-bar" x="570.6" y="167.77" width="15.41" height="42.23" rx="1"><title>2026-10-05: 9</title></rect>
+<rect class="commit-bar" x="592" y="191.23" width="15.41" height="18.77" rx="1"><title>2026-10-06: 4</title></rect>
+<rect class="commit-bar" x="613.4" y="181.85" width="15.41" height="28.15" rx="1"><title>2026-10-07: 6</title></rect>
+<rect class="commit-bar" x="634.8" y="116.15" width="15.41" height="93.85" rx="1"><title>2026-10-08: 20</title></rect>
+<rect class="commit-bar" x="656.2" y="116.15" width="15.41" height="93.85" rx="1"><title>2026-10-09: 20</title></rect>
+<rect class="commit-bar" x="677.6" y="191.23" width="15.41" height="18.77" rx="1"><title>2026-10-10: 4</title></rect>
+<text class="label muted" x="54" y="238">11.09.2026</text>
+<text class="label muted" x="696" y="238" text-anchor="end">10.10.2026</text>
 </svg>
