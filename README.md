@@ -9,27 +9,27 @@
 <details>
 <summary><strong>Последние 7 дней</strong></summary>
 
-![Коммиты за 7 дней](generated/commits-7.svg?v=23d8eab47707)
+![Коммиты за 7 дней](generated/commits-7.svg?v=4bc4746c439b)
 
-![Строки кода за 7 дней](generated/lines-7.svg?v=5e8744d62689)
+![Строки кода за 7 дней](generated/lines-7.svg?v=2c922e997b98)
 
 </details>
 
 <details open>
 <summary><strong>Последние 30 дней</strong></summary>
 
-![Коммиты за 30 дней](generated/commits-30.svg?v=922bddea5f1b)
+![Коммиты за 30 дней](generated/commits-30.svg?v=510de7904b62)
 
-![Строки кода за 30 дней](generated/lines-30.svg?v=07762eded8d5)
+![Строки кода за 30 дней](generated/lines-30.svg?v=878a137bf8f6)
 
 </details>
 
 <details>
 <summary><strong>Последние 365 дней</strong></summary>
 
-![Коммиты за 365 дней](generated/commits-365.svg?v=81a26e075524)
+![Коммиты за 365 дней](generated/commits-365.svg?v=2db60d2d7b44)
 
-![Строки кода за 365 дней](generated/lines-365.svg?v=38e34a97e85e)
+![Строки кода за 365 дней](generated/lines-365.svg?v=9e55025720a9)
 
 </details>
 
