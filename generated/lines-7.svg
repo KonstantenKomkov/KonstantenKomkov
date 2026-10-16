@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" width="720" height="260" style="max-width:100%;height:auto" role="img" aria-labelledby="title description" preserveAspectRatio="xMidYMid meet">
 <title id="title">Строки кода за 7 дней</title>
-<desc id="description">Добавлено 32518, удалено 6410 строк исходного кода.</desc>
+<desc id="description">Добавлено 23012, удалено 5325 строк исходного кода.</desc>
 <style>text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1f2328; }
 .surface { fill: #ffffff; stroke: #d0d7de; }
 .title { font-size: 21px; font-weight: 650; }
@@ -37,8 +37,8 @@
 }</style>
 <rect class="surface" x="1" y="1" width="718" height="258" rx="12" />
 <text class="title" x="28" y="38">Строки кода</text>
-<text class="metric added-text" x="28" y="64">добавлено +32 518</text>
-<text class="metric deleted-text" x="210" y="64">удалено −6 410</text>
+<text class="metric added-text" x="28" y="64">добавлено +23 012</text>
+<text class="metric deleted-text" x="210" y="64">удалено −5 325</text>
 <text class="label muted" x="696" y="80" text-anchor="end">строк/день</text>
 <line class="grid" x1="54" y1="88" x2="696" y2="88" />
 <text class="muted" font-size="10" x="46" y="91.5" text-anchor="end">11 605</text>
@@ -50,22 +50,22 @@
 <text class="muted" font-size="10" x="46" y="183" text-anchor="end">2 901</text>
 <line class="grid" x1="54" y1="210" x2="696" y2="210" />
 <text class="muted" font-size="10" x="46" y="213.5" text-anchor="end">0</text>
-<polyline class="added-line" points="54,168.31 161,124.53 268,171.36 375,204.62 482,201.04 589,88 696,170.29" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
-<polyline class="deleted-line" points="54,199.81 161,205.61 268,208.62 375,207.18 482,207.53 589,170.83 696,203.03" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
-<circle class="added-marker" cx="54" cy="168.31" r="2.4"><title>2026-10-08: 3966</title></circle>
-<circle class="added-marker" cx="161" cy="124.53" r="2.4"><title>2026-10-09: 8130</title></circle>
-<circle class="added-marker" cx="268" cy="171.36" r="2.4"><title>2026-10-10: 3676</title></circle>
-<circle class="added-marker" cx="375" cy="204.62" r="2.4"><title>2026-10-11: 512</title></circle>
-<circle class="added-marker" cx="482" cy="201.04" r="2.4"><title>2026-10-12: 852</title></circle>
-<circle class="added-marker" cx="589" cy="88" r="2.4"><title>2026-10-13: 11605</title></circle>
-<circle class="added-marker" cx="696" cy="170.29" r="2.4"><title>2026-10-14: 3777</title></circle>
-<circle class="deleted-marker" cx="54" cy="199.81" r="2.4"><title>2026-10-08: 969</title></circle>
-<circle class="deleted-marker" cx="161" cy="205.61" r="2.4"><title>2026-10-09: 418</title></circle>
-<circle class="deleted-marker" cx="268" cy="208.62" r="2.4"><title>2026-10-10: 131</title></circle>
-<circle class="deleted-marker" cx="375" cy="207.18" r="2.4"><title>2026-10-11: 268</title></circle>
-<circle class="deleted-marker" cx="482" cy="207.53" r="2.4"><title>2026-10-12: 235</title></circle>
-<circle class="deleted-marker" cx="589" cy="170.83" r="2.4"><title>2026-10-13: 3726</title></circle>
-<circle class="deleted-marker" cx="696" cy="203.03" r="2.4"><title>2026-10-14: 663</title></circle>
-<text class="label muted" x="54" y="238">08.10.2026</text>
-<text class="label muted" x="696" y="238" text-anchor="end">14.10.2026</text>
+<polyline class="added-line" points="54,171.36 161,204.62 268,201.04 375,88 482,158.63 589,198.76 696,205.67" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+<polyline class="deleted-line" points="54,208.62 161,207.18 268,207.53 375,170.83 482,201.83 589,208.41 696,209.61" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+<circle class="added-marker" cx="54" cy="171.36" r="2.4"><title>2026-10-10: 3676</title></circle>
+<circle class="added-marker" cx="161" cy="204.62" r="2.4"><title>2026-10-11: 512</title></circle>
+<circle class="added-marker" cx="268" cy="201.04" r="2.4"><title>2026-10-12: 852</title></circle>
+<circle class="added-marker" cx="375" cy="88" r="2.4"><title>2026-10-13: 11605</title></circle>
+<circle class="added-marker" cx="482" cy="158.63" r="2.4"><title>2026-10-14: 4886</title></circle>
+<circle class="added-marker" cx="589" cy="198.76" r="2.4"><title>2026-10-15: 1069</title></circle>
+<circle class="added-marker" cx="696" cy="205.67" r="2.4"><title>2026-10-16: 412</title></circle>
+<circle class="deleted-marker" cx="54" cy="208.62" r="2.4"><title>2026-10-10: 131</title></circle>
+<circle class="deleted-marker" cx="161" cy="207.18" r="2.4"><title>2026-10-11: 268</title></circle>
+<circle class="deleted-marker" cx="268" cy="207.53" r="2.4"><title>2026-10-12: 235</title></circle>
+<circle class="deleted-marker" cx="375" cy="170.83" r="2.4"><title>2026-10-13: 3726</title></circle>
+<circle class="deleted-marker" cx="482" cy="201.83" r="2.4"><title>2026-10-14: 777</title></circle>
+<circle class="deleted-marker" cx="589" cy="208.41" r="2.4"><title>2026-10-15: 151</title></circle>
+<circle class="deleted-marker" cx="696" cy="209.61" r="2.4"><title>2026-10-16: 37</title></circle>
+<text class="label muted" x="54" y="238">10.10.2026</text>
+<text class="label muted" x="696" y="238" text-anchor="end">16.10.2026</text>
 </svg>
