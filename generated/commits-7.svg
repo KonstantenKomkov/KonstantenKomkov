@@ -49,13 +49,13 @@
 <text class="muted" font-size="10" x="46" y="181.87" text-anchor="end">7</text>
 <line class="grid" x1="54" y1="210" x2="696" y2="210" />
 <text class="muted" font-size="10" x="46" y="213.5" text-anchor="end">0</text>
-<rect class="commit-bar" x="66.84" y="164.81" width="66.03" height="45.19" rx="1"><title>2026-10-16: 10</title></rect>
-<rect class="commit-bar" x="158.55" y="164.81" width="66.03" height="45.19" rx="1"><title>2026-10-17: 10</title></rect>
-<rect class="commit-bar" x="250.27" y="164.81" width="66.03" height="45.19" rx="1"><title>2026-10-18: 10</title></rect>
-<rect class="commit-bar" x="341.98" y="88" width="66.03" height="122" rx="1"><title>2026-10-19: 27</title></rect>
-<rect class="commit-bar" x="433.7" y="128.67" width="66.03" height="81.33" rx="1"><title>2026-10-20: 18</title></rect>
-<rect class="commit-bar" x="525.41" y="160.3" width="66.03" height="49.7" rx="1"><title>2026-10-21: 11</title></rect>
-<rect class="commit-bar" x="617.13" y="191.93" width="66.03" height="18.07" rx="1"><title>2026-10-22: 4</title></rect>
-<text class="label muted" x="54" y="238">16.10.2026</text>
-<text class="label muted" x="696" y="238" text-anchor="end">22.10.2026</text>
+<rect class="commit-bar" x="66.84" y="164.81" width="66.03" height="45.19" rx="1"><title>2026-10-17: 10</title></rect>
+<rect class="commit-bar" x="158.55" y="164.81" width="66.03" height="45.19" rx="1"><title>2026-10-18: 10</title></rect>
+<rect class="commit-bar" x="250.27" y="88" width="66.03" height="122" rx="1"><title>2026-10-19: 27</title></rect>
+<rect class="commit-bar" x="341.98" y="128.67" width="66.03" height="81.33" rx="1"><title>2026-10-20: 18</title></rect>
+<rect class="commit-bar" x="433.7" y="160.3" width="66.03" height="49.7" rx="1"><title>2026-10-21: 11</title></rect>
+<rect class="commit-bar" x="525.41" y="151.26" width="66.03" height="58.74" rx="1"><title>2026-10-22: 13</title></rect>
+<rect class="commit-bar" x="617.13" y="205.48" width="66.03" height="4.52" rx="1"><title>2026-10-23: 1</title></rect>
+<text class="label muted" x="54" y="238">17.10.2026</text>
+<text class="label muted" x="696" y="238" text-anchor="end">23.10.2026</text>
 </svg>
