@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" width="720" height="260" style="max-width:100%;height:auto" role="img" aria-labelledby="title description" preserveAspectRatio="xMidYMid meet">
 <title id="title">Строки кода за 30 дней</title>
-<desc id="description">Добавлено 142531, удалено 27735 строк исходного кода.</desc>
+<desc id="description">Добавлено 140479, удалено 27620 строк исходного кода.</desc>
 <style>text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1f2328; }
 .surface { fill: #ffffff; stroke: #d0d7de; }
 .title { font-size: 21px; font-weight: 650; }
@@ -37,8 +37,8 @@
 }</style>
 <rect class="surface" x="1" y="1" width="718" height="258" rx="12" />
 <text class="title" x="28" y="38">Строки кода</text>
-<text class="metric added-text" x="28" y="64">добавлено +142 531</text>
-<text class="metric deleted-text" x="210" y="64">удалено −27 735</text>
+<text class="metric added-text" x="28" y="64">добавлено +140 479</text>
+<text class="metric deleted-text" x="210" y="64">удалено −27 620</text>
 <text class="label muted" x="696" y="80" text-anchor="end">строк/день</text>
 <line class="grid" x1="54" y1="88" x2="696" y2="88" />
 <text class="muted" font-size="10" x="46" y="91.5" text-anchor="end">26 399</text>
@@ -50,68 +50,68 @@
 <text class="muted" font-size="10" x="46" y="183" text-anchor="end">6 600</text>
 <line class="grid" x1="54" y1="210" x2="696" y2="210" />
 <text class="muted" font-size="10" x="46" y="213.5" text-anchor="end">0</text>
-<polyline class="added-line" points="54,193.01 76.14,207.63 98.28,206.06 120.41,156.37 142.55,187.42 164.69,205.06 186.83,183.45 208.97,155.44 231.1,108.24 253.24,88 275.38,178.5 297.52,199.88 319.66,192.97 341.79,183.57 363.93,161.03 386.07,200.38 408.21,196.41 430.34,202.63 452.48,209.4 474.62,210 496.76,204.52 518.9,210 541.03,210 563.17,207.91 585.31,208.18 607.45,190.94 629.59,190.33 651.72,193.02 673.86,194.94 696,206.01" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
-<polyline class="deleted-line" points="54,209.39 76.14,208.76 98.28,208.91 120.41,192.78 142.55,206.41 164.69,209.3 186.83,208.62 208.97,208.42 231.1,206.81 253.24,155.17 275.38,198.78 297.52,206.66 319.66,208.89 341.79,209.07 363.93,208.71 386.07,208.35 408.21,208.03 430.34,207.45 452.48,209.97 474.62,210 496.76,209.93 518.9,210 541.03,210 563.17,209.94 585.31,209.65 607.45,209.08 629.59,207.94 651.72,203.17 673.86,202.11 696,209.51" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
-<circle class="added-marker" cx="54" cy="193.01" r="2.4"><title>2026-10-10: 3676</title></circle>
-<circle class="added-marker" cx="76.14" cy="207.63" r="2.4"><title>2026-10-11: 512</title></circle>
-<circle class="added-marker" cx="98.28" cy="206.06" r="2.4"><title>2026-10-12: 852</title></circle>
-<circle class="added-marker" cx="120.41" cy="156.37" r="2.4"><title>2026-10-13: 11605</title></circle>
-<circle class="added-marker" cx="142.55" cy="187.42" r="2.4"><title>2026-10-14: 4886</title></circle>
-<circle class="added-marker" cx="164.69" cy="205.06" r="2.4"><title>2026-10-15: 1069</title></circle>
-<circle class="added-marker" cx="186.83" cy="183.45" r="2.4"><title>2026-10-16: 5746</title></circle>
-<circle class="added-marker" cx="208.97" cy="155.44" r="2.4"><title>2026-10-17: 11805</title></circle>
-<circle class="added-marker" cx="231.1" cy="108.24" r="2.4"><title>2026-10-18: 22019</title></circle>
-<circle class="added-marker" cx="253.24" cy="88" r="2.4"><title>2026-10-19: 26399</title></circle>
-<circle class="added-marker" cx="275.38" cy="178.5" r="2.4"><title>2026-10-20: 6816</title></circle>
-<circle class="added-marker" cx="297.52" cy="199.88" r="2.4"><title>2026-10-21: 2190</title></circle>
-<circle class="added-marker" cx="319.66" cy="192.97" r="2.4"><title>2026-10-22: 3685</title></circle>
-<circle class="added-marker" cx="341.79" cy="183.57" r="2.4"><title>2026-10-23: 5719</title></circle>
-<circle class="added-marker" cx="363.93" cy="161.03" r="2.4"><title>2026-10-24: 10597</title></circle>
-<circle class="added-marker" cx="386.07" cy="200.38" r="2.4"><title>2026-10-25: 2081</title></circle>
-<circle class="added-marker" cx="408.21" cy="196.41" r="2.4"><title>2026-10-26: 2940</title></circle>
-<circle class="added-marker" cx="430.34" cy="202.63" r="2.4"><title>2026-10-27: 1595</title></circle>
-<circle class="added-marker" cx="452.48" cy="209.4" r="2.4"><title>2026-10-28: 129</title></circle>
-<circle class="added-marker" cx="474.62" cy="210" r="2.4"><title>2026-10-29: 0</title></circle>
-<circle class="added-marker" cx="496.76" cy="204.52" r="2.4"><title>2026-10-30: 1186</title></circle>
-<circle class="added-marker" cx="518.9" cy="210" r="2.4"><title>2026-10-31: 0</title></circle>
-<circle class="added-marker" cx="541.03" cy="210" r="2.4"><title>2026-11-01: 0</title></circle>
-<circle class="added-marker" cx="563.17" cy="207.91" r="2.4"><title>2026-11-02: 453</title></circle>
-<circle class="added-marker" cx="585.31" cy="208.18" r="2.4"><title>2026-11-03: 394</title></circle>
-<circle class="added-marker" cx="607.45" cy="190.94" r="2.4"><title>2026-11-04: 4124</title></circle>
-<circle class="added-marker" cx="629.59" cy="190.33" r="2.4"><title>2026-11-05: 4256</title></circle>
-<circle class="added-marker" cx="651.72" cy="193.02" r="2.4"><title>2026-11-06: 3674</title></circle>
-<circle class="added-marker" cx="673.86" cy="194.94" r="2.4"><title>2026-11-07: 3259</title></circle>
-<circle class="added-marker" cx="696" cy="206.01" r="2.4"><title>2026-11-08: 864</title></circle>
-<circle class="deleted-marker" cx="54" cy="209.39" r="2.4"><title>2026-10-10: 131</title></circle>
-<circle class="deleted-marker" cx="76.14" cy="208.76" r="2.4"><title>2026-10-11: 268</title></circle>
-<circle class="deleted-marker" cx="98.28" cy="208.91" r="2.4"><title>2026-10-12: 235</title></circle>
-<circle class="deleted-marker" cx="120.41" cy="192.78" r="2.4"><title>2026-10-13: 3726</title></circle>
-<circle class="deleted-marker" cx="142.55" cy="206.41" r="2.4"><title>2026-10-14: 777</title></circle>
-<circle class="deleted-marker" cx="164.69" cy="209.3" r="2.4"><title>2026-10-15: 151</title></circle>
-<circle class="deleted-marker" cx="186.83" cy="208.62" r="2.4"><title>2026-10-16: 299</title></circle>
-<circle class="deleted-marker" cx="208.97" cy="208.42" r="2.4"><title>2026-10-17: 341</title></circle>
-<circle class="deleted-marker" cx="231.1" cy="206.81" r="2.4"><title>2026-10-18: 691</title></circle>
-<circle class="deleted-marker" cx="253.24" cy="155.17" r="2.4"><title>2026-10-19: 11864</title></circle>
-<circle class="deleted-marker" cx="275.38" cy="198.78" r="2.4"><title>2026-10-20: 2428</title></circle>
-<circle class="deleted-marker" cx="297.52" cy="206.66" r="2.4"><title>2026-10-21: 722</title></circle>
-<circle class="deleted-marker" cx="319.66" cy="208.89" r="2.4"><title>2026-10-22: 241</title></circle>
-<circle class="deleted-marker" cx="341.79" cy="209.07" r="2.4"><title>2026-10-23: 202</title></circle>
-<circle class="deleted-marker" cx="363.93" cy="208.71" r="2.4"><title>2026-10-24: 280</title></circle>
-<circle class="deleted-marker" cx="386.07" cy="208.35" r="2.4"><title>2026-10-25: 357</title></circle>
-<circle class="deleted-marker" cx="408.21" cy="208.03" r="2.4"><title>2026-10-26: 426</title></circle>
-<circle class="deleted-marker" cx="430.34" cy="207.45" r="2.4"><title>2026-10-27: 552</title></circle>
-<circle class="deleted-marker" cx="452.48" cy="209.97" r="2.4"><title>2026-10-28: 6</title></circle>
-<circle class="deleted-marker" cx="474.62" cy="210" r="2.4"><title>2026-10-29: 0</title></circle>
-<circle class="deleted-marker" cx="496.76" cy="209.93" r="2.4"><title>2026-10-30: 16</title></circle>
-<circle class="deleted-marker" cx="518.9" cy="210" r="2.4"><title>2026-10-31: 0</title></circle>
-<circle class="deleted-marker" cx="541.03" cy="210" r="2.4"><title>2026-11-01: 0</title></circle>
-<circle class="deleted-marker" cx="563.17" cy="209.94" r="2.4"><title>2026-11-02: 12</title></circle>
-<circle class="deleted-marker" cx="585.31" cy="209.65" r="2.4"><title>2026-11-03: 76</title></circle>
-<circle class="deleted-marker" cx="607.45" cy="209.08" r="2.4"><title>2026-11-04: 198</title></circle>
-<circle class="deleted-marker" cx="629.59" cy="207.94" r="2.4"><title>2026-11-05: 445</title></circle>
-<circle class="deleted-marker" cx="651.72" cy="203.17" r="2.4"><title>2026-11-06: 1478</title></circle>
-<circle class="deleted-marker" cx="673.86" cy="202.11" r="2.4"><title>2026-11-07: 1707</title></circle>
-<circle class="deleted-marker" cx="696" cy="209.51" r="2.4"><title>2026-11-08: 106</title></circle>
-<text class="label muted" x="54" y="238">10.10.2026</text>
-<text class="label muted" x="696" y="238" text-anchor="end">08.11.2026</text>
+<polyline class="added-line" points="54,207.63 76.14,206.06 98.28,156.37 120.41,187.42 142.55,205.06 164.69,183.45 186.83,155.44 208.97,108.24 231.1,88 253.24,178.5 275.38,199.88 297.52,192.97 319.66,183.57 341.79,161.03 363.93,200.38 386.07,196.41 408.21,202.63 430.34,209.4 452.48,210 474.62,204.52 496.76,210 518.9,210 541.03,207.91 563.17,208.18 585.31,190.94 607.45,190.33 629.59,193.02 651.72,194.94 673.86,198.5 696,210" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+<polyline class="deleted-line" points="54,208.76 76.14,208.91 98.28,192.78 120.41,206.41 142.55,209.3 164.69,208.62 186.83,208.42 208.97,206.81 231.1,155.17 253.24,198.78 275.38,206.66 297.52,208.89 319.66,209.07 341.79,208.71 363.93,208.35 386.07,208.03 408.21,207.45 430.34,209.97 452.48,210 474.62,209.93 496.76,210 518.9,210 541.03,209.94 563.17,209.65 585.31,209.08 607.45,207.94 629.59,203.17 651.72,202.11 673.86,209.44 696,210" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+<circle class="added-marker" cx="54" cy="207.63" r="2.4"><title>2026-10-11: 512</title></circle>
+<circle class="added-marker" cx="76.14" cy="206.06" r="2.4"><title>2026-10-12: 852</title></circle>
+<circle class="added-marker" cx="98.28" cy="156.37" r="2.4"><title>2026-10-13: 11605</title></circle>
+<circle class="added-marker" cx="120.41" cy="187.42" r="2.4"><title>2026-10-14: 4886</title></circle>
+<circle class="added-marker" cx="142.55" cy="205.06" r="2.4"><title>2026-10-15: 1069</title></circle>
+<circle class="added-marker" cx="164.69" cy="183.45" r="2.4"><title>2026-10-16: 5746</title></circle>
+<circle class="added-marker" cx="186.83" cy="155.44" r="2.4"><title>2026-10-17: 11805</title></circle>
+<circle class="added-marker" cx="208.97" cy="108.24" r="2.4"><title>2026-10-18: 22019</title></circle>
+<circle class="added-marker" cx="231.1" cy="88" r="2.4"><title>2026-10-19: 26399</title></circle>
+<circle class="added-marker" cx="253.24" cy="178.5" r="2.4"><title>2026-10-20: 6816</title></circle>
+<circle class="added-marker" cx="275.38" cy="199.88" r="2.4"><title>2026-10-21: 2190</title></circle>
+<circle class="added-marker" cx="297.52" cy="192.97" r="2.4"><title>2026-10-22: 3685</title></circle>
+<circle class="added-marker" cx="319.66" cy="183.57" r="2.4"><title>2026-10-23: 5719</title></circle>
+<circle class="added-marker" cx="341.79" cy="161.03" r="2.4"><title>2026-10-24: 10597</title></circle>
+<circle class="added-marker" cx="363.93" cy="200.38" r="2.4"><title>2026-10-25: 2081</title></circle>
+<circle class="added-marker" cx="386.07" cy="196.41" r="2.4"><title>2026-10-26: 2940</title></circle>
+<circle class="added-marker" cx="408.21" cy="202.63" r="2.4"><title>2026-10-27: 1595</title></circle>
+<circle class="added-marker" cx="430.34" cy="209.4" r="2.4"><title>2026-10-28: 129</title></circle>
+<circle class="added-marker" cx="452.48" cy="210" r="2.4"><title>2026-10-29: 0</title></circle>
+<circle class="added-marker" cx="474.62" cy="204.52" r="2.4"><title>2026-10-30: 1186</title></circle>
+<circle class="added-marker" cx="496.76" cy="210" r="2.4"><title>2026-10-31: 0</title></circle>
+<circle class="added-marker" cx="518.9" cy="210" r="2.4"><title>2026-11-01: 0</title></circle>
+<circle class="added-marker" cx="541.03" cy="207.91" r="2.4"><title>2026-11-02: 453</title></circle>
+<circle class="added-marker" cx="563.17" cy="208.18" r="2.4"><title>2026-11-03: 394</title></circle>
+<circle class="added-marker" cx="585.31" cy="190.94" r="2.4"><title>2026-11-04: 4124</title></circle>
+<circle class="added-marker" cx="607.45" cy="190.33" r="2.4"><title>2026-11-05: 4256</title></circle>
+<circle class="added-marker" cx="629.59" cy="193.02" r="2.4"><title>2026-11-06: 3674</title></circle>
+<circle class="added-marker" cx="651.72" cy="194.94" r="2.4"><title>2026-11-07: 3259</title></circle>
+<circle class="added-marker" cx="673.86" cy="198.5" r="2.4"><title>2026-11-08: 2488</title></circle>
+<circle class="added-marker" cx="696" cy="210" r="2.4"><title>2026-11-09: 0</title></circle>
+<circle class="deleted-marker" cx="54" cy="208.76" r="2.4"><title>2026-10-11: 268</title></circle>
+<circle class="deleted-marker" cx="76.14" cy="208.91" r="2.4"><title>2026-10-12: 235</title></circle>
+<circle class="deleted-marker" cx="98.28" cy="192.78" r="2.4"><title>2026-10-13: 3726</title></circle>
+<circle class="deleted-marker" cx="120.41" cy="206.41" r="2.4"><title>2026-10-14: 777</title></circle>
+<circle class="deleted-marker" cx="142.55" cy="209.3" r="2.4"><title>2026-10-15: 151</title></circle>
+<circle class="deleted-marker" cx="164.69" cy="208.62" r="2.4"><title>2026-10-16: 299</title></circle>
+<circle class="deleted-marker" cx="186.83" cy="208.42" r="2.4"><title>2026-10-17: 341</title></circle>
+<circle class="deleted-marker" cx="208.97" cy="206.81" r="2.4"><title>2026-10-18: 691</title></circle>
+<circle class="deleted-marker" cx="231.1" cy="155.17" r="2.4"><title>2026-10-19: 11864</title></circle>
+<circle class="deleted-marker" cx="253.24" cy="198.78" r="2.4"><title>2026-10-20: 2428</title></circle>
+<circle class="deleted-marker" cx="275.38" cy="206.66" r="2.4"><title>2026-10-21: 722</title></circle>
+<circle class="deleted-marker" cx="297.52" cy="208.89" r="2.4"><title>2026-10-22: 241</title></circle>
+<circle class="deleted-marker" cx="319.66" cy="209.07" r="2.4"><title>2026-10-23: 202</title></circle>
+<circle class="deleted-marker" cx="341.79" cy="208.71" r="2.4"><title>2026-10-24: 280</title></circle>
+<circle class="deleted-marker" cx="363.93" cy="208.35" r="2.4"><title>2026-10-25: 357</title></circle>
+<circle class="deleted-marker" cx="386.07" cy="208.03" r="2.4"><title>2026-10-26: 426</title></circle>
+<circle class="deleted-marker" cx="408.21" cy="207.45" r="2.4"><title>2026-10-27: 552</title></circle>
+<circle class="deleted-marker" cx="430.34" cy="209.97" r="2.4"><title>2026-10-28: 6</title></circle>
+<circle class="deleted-marker" cx="452.48" cy="210" r="2.4"><title>2026-10-29: 0</title></circle>
+<circle class="deleted-marker" cx="474.62" cy="209.93" r="2.4"><title>2026-10-30: 16</title></circle>
+<circle class="deleted-marker" cx="496.76" cy="210" r="2.4"><title>2026-10-31: 0</title></circle>
+<circle class="deleted-marker" cx="518.9" cy="210" r="2.4"><title>2026-11-01: 0</title></circle>
+<circle class="deleted-marker" cx="541.03" cy="209.94" r="2.4"><title>2026-11-02: 12</title></circle>
+<circle class="deleted-marker" cx="563.17" cy="209.65" r="2.4"><title>2026-11-03: 76</title></circle>
+<circle class="deleted-marker" cx="585.31" cy="209.08" r="2.4"><title>2026-11-04: 198</title></circle>
+<circle class="deleted-marker" cx="607.45" cy="207.94" r="2.4"><title>2026-11-05: 445</title></circle>
+<circle class="deleted-marker" cx="629.59" cy="203.17" r="2.4"><title>2026-11-06: 1478</title></circle>
+<circle class="deleted-marker" cx="651.72" cy="202.11" r="2.4"><title>2026-11-07: 1707</title></circle>
+<circle class="deleted-marker" cx="673.86" cy="209.44" r="2.4"><title>2026-11-08: 122</title></circle>
+<circle class="deleted-marker" cx="696" cy="210" r="2.4"><title>2026-11-09: 0</title></circle>
+<text class="label muted" x="54" y="238">11.10.2026</text>
+<text class="label muted" x="696" y="238" text-anchor="end">09.11.2026</text>
 </svg>
