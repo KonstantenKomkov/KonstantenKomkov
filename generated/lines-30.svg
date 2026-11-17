@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" width="720" height="260" style="max-width:100%;height:auto" role="img" aria-labelledby="title description" preserveAspectRatio="xMidYMid meet">
 <title id="title">Строки кода за 30 дней</title>
-<desc id="description">Добавлено 128260, удалено 29596 строк исходного кода.</desc>
+<desc id="description">Добавлено 128869, удалено 29596 строк исходного кода.</desc>
 <style>text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1f2328; }
 .surface { fill: #ffffff; stroke: #d0d7de; }
 .title { font-size: 21px; font-weight: 650; }
@@ -37,7 +37,7 @@
 }</style>
 <rect class="surface" x="1" y="1" width="718" height="258" rx="12" />
 <text class="title" x="28" y="38">Строки кода</text>
-<text class="metric added-text" x="28" y="64">добавлено +128 260</text>
+<text class="metric added-text" x="28" y="64">добавлено +128 869</text>
 <text class="metric deleted-text" x="210" y="64">удалено −29 596</text>
 <text class="label muted" x="696" y="80" text-anchor="end">строк/день</text>
 <line class="grid" x1="54" y1="88" x2="696" y2="88" />
@@ -50,7 +50,7 @@
 <text class="muted" font-size="10" x="46" y="183" text-anchor="end">6 600</text>
 <line class="grid" x1="54" y1="210" x2="696" y2="210" />
 <text class="muted" font-size="10" x="46" y="213.5" text-anchor="end">0</text>
-<polyline class="added-line" points="54,88 76.14,178.5 98.28,199.88 120.41,192.97 142.55,183.57 164.69,161.03 186.83,200.38 208.97,196.41 231.1,202.63 253.24,209.4 275.38,210 297.52,204.52 319.66,210 341.79,210 363.93,207.91 386.07,208.18 408.21,190.94 430.34,190.33 452.48,193.02 474.62,194.94 496.76,198.5 518.9,184.47 541.03,144.81 563.17,177.27 585.31,194.81 607.45,179.24 629.59,182.22 651.72,200.93 673.86,202.4 696,210" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+<polyline class="added-line" points="54,88 76.14,178.5 98.28,199.88 120.41,192.97 142.55,183.57 164.69,161.03 186.83,200.38 208.97,196.41 231.1,202.63 253.24,209.4 275.38,210 297.52,204.52 319.66,210 341.79,210 363.93,207.91 386.07,208.18 408.21,190.94 430.34,190.33 452.48,193.02 474.62,194.94 496.76,198.5 518.9,184.47 541.03,144.81 563.17,177.27 585.31,194.81 607.45,179.24 629.59,182.22 651.72,200.93 673.86,202.4 696,207.19" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
 <polyline class="deleted-line" points="54,155.17 76.14,198.78 98.28,206.66 120.41,208.89 142.55,209.07 164.69,208.71 186.83,208.35 208.97,208.03 231.1,207.45 253.24,209.97 275.38,210 297.52,209.93 319.66,210 341.79,210 363.93,209.94 386.07,209.65 408.21,209.08 430.34,207.94 452.48,203.17 474.62,202.11 496.76,209.44 518.9,205.28 541.03,193.37 563.17,204.13 585.31,204.73 607.45,209.5 629.59,208 651.72,206.76 673.86,209.12 696,210" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
 <circle class="added-marker" cx="54" cy="88" r="2.4"><title>2026-10-19: 26399</title></circle>
 <circle class="added-marker" cx="76.14" cy="178.5" r="2.4"><title>2026-10-20: 6816</title></circle>
@@ -81,7 +81,7 @@
 <circle class="added-marker" cx="629.59" cy="182.22" r="2.4"><title>2026-11-14: 6012</title></circle>
 <circle class="added-marker" cx="651.72" cy="200.93" r="2.4"><title>2026-11-15: 1962</title></circle>
 <circle class="added-marker" cx="673.86" cy="202.4" r="2.4"><title>2026-11-16: 1645</title></circle>
-<circle class="added-marker" cx="696" cy="210" r="2.4"><title>2026-11-17: 0</title></circle>
+<circle class="added-marker" cx="696" cy="207.19" r="2.4"><title>2026-11-17: 609</title></circle>
 <circle class="deleted-marker" cx="54" cy="155.17" r="2.4"><title>2026-10-19: 11864</title></circle>
 <circle class="deleted-marker" cx="76.14" cy="198.78" r="2.4"><title>2026-10-20: 2428</title></circle>
 <circle class="deleted-marker" cx="98.28" cy="206.66" r="2.4"><title>2026-10-21: 722</title></circle>
